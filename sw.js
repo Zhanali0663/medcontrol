@@ -1,7 +1,8 @@
 const CACHE_NAME = 'medcontrol-v1';
 const URLS_TO_CACHE = [
-  'index.html',
-  'manifest.json',
+  './',
+  './index.html',
+  './manifest.json',
 ];
 
 // Установка Service Worker
