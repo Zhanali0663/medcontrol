@@ -1300,16 +1300,39 @@ async function toggleMed(medId, timeOfDay, medName) {
   const today = new Date().toISOString().split('T')[0];
   const existing = todayLogs.find(l => l.medication_id === medId && l.time_of_day === timeOfDay);
 
+  // Оптимистичное обновление UI ДО запроса
+  const medElement = document.getElementById(`med-item-${medId}-${timeOfDay}`);
+  if (medElement) {
+    const checkBtn = medElement.querySelector('.med-check');
+    if (existing) {
+      // Сразу меняем на undone
+      checkBtn.classList.remove('done');
+      checkBtn.classList.add('undone');
+      checkBtn.textContent = '';
+    } else {
+      // Сразу меняем на done
+      checkBtn.classList.remove('undone');
+      checkBtn.classList.add('done');
+      checkBtn.textContent = '✓';
+    }
+  }
+
   if (existing) {
     // Отменить отметку
     const { error } = await sb.from('medication_logs').delete().eq('id', existing.id);
     if (error) {
       showToast('Ошибка отмены', 'error');
+      // Вернуть обратно на done
+      if (medElement) {
+        const checkBtn = medElement.querySelector('.med-check');
+        checkBtn.classList.remove('undone');
+        checkBtn.classList.add('done');
+        checkBtn.textContent = '✓';
+      }
       return;
     }
     todayLogs = todayLogs.filter(l => l.id !== existing.id);
     showToast(`${medName} — отмечено как НЕ принято`);
-    await renderSchedule();
   } else {
     // Отметить как принятое
     const { data, error } = await sb.from('medication_logs').insert({
@@ -1328,11 +1351,19 @@ async function toggleMed(medId, timeOfDay, medName) {
       await notifyFamilyMembers(medName, currentProfile?.name || 'Неизвестно');
     } else if (error?.code === '23505') {
       showToast('Уже отмечено', 'success');
+      // Оставляем зелёным
+      return;
     } else if (error) {
       showToast('Ошибка сохранения', 'error');
+      // Вернуть обратно на undone
+      if (medElement) {
+        const checkBtn = medElement.querySelector('.med-check');
+        checkBtn.classList.remove('done');
+        checkBtn.classList.add('undone');
+        checkBtn.textContent = '';
+      }
       return;
     }
-    await renderSchedule();
   }
 }
 
