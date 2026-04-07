@@ -1156,6 +1156,9 @@ async function changeFamilySelection() {
     const selectedFamily = userFamilies.find(f => f.id === selectedFamilyId);
     document.getElementById('family-header-title').textContent = selectedFamily?.name || 'Моя семья';
     
+    // Переподписаться на real-time уведомления с новой семьей
+    subscribeToMedicationChanges();
+    
     // Обновляем содержимое
     if (currentFamilyTab === 'schedule') {
       await renderSchedule();
@@ -1923,11 +1926,22 @@ async function checkAndSendReminders() {
 // ═══════════════════════════════════════════
 // REAL-TIME SUBSCRIPTIONS
 // ═══════════════════════════════════════════
-function subscribeToMedicationChanges() {
-  if (!currentUser) return;
+let realtimeSubscription = null;
 
-  // Подписаться на изменения в medication_logs
-  sb.channel(`user:${currentUser.id}`)
+function subscribeToMedicationChanges() {
+  if (!currentUser || !userFamilies || userFamilies.length === 0) return;
+
+  // Отписаться от старой подписки если есть
+  if (realtimeSubscription) {
+    realtimeSubscription.unsubscribe();
+  }
+
+  // Получить ID всех семей пользователя
+  const familyIds = userFamilies.map(f => f.id);
+  
+  // Подписаться на изменения в medication_logs для всех семей
+  realtimeSubscription = sb
+    .channel('medication_changes')
     .on(
       'postgres_changes',
       {
@@ -1936,28 +1950,28 @@ function subscribeToMedicationChanges() {
         table: 'medication_logs'
       },
       (payload) => {
-        handleNewMedicationLog(payload.new);
+        // Проверяем, есть ли эта семья в наших семьях
+        if (familyIds.includes(payload.new.family_id)) {
+          handleNewMedicationLog(payload.new);
+        }
       }
     )
-    .subscribe();
-
-  console.log('✅ Подписаны на real-time уведомления');
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Подписаны на real-time уведомления');
+      }
+    });
 }
 
 function handleNewMedicationLog(log) {
-  // Если это не наша семья - игнорируем
-  if (log.family_id !== selectedFamilyId) return;
-
   // Если это мы сами отметили - не показываем уведомление
   if (log.given_by === currentUser.id) return;
 
-  // Показать уведомление от другого пользователя
-  const medName = 'Лекарство'; // Получим из БД
   const giverName = log.given_by_name || 'Кто-то';
   const timeLabel = {
-    morning: '🌅 Утро',
-    afternoon: '☀️ День',
-    evening: '🌙 Вечер'
+    morning: '🌅 Утро (08:00)',
+    afternoon: '☀️ День (14:00)',
+    evening: '🌙 Вечер (20:00)'
   }[log.time_of_day] || 'Неизвестное время';
 
   // Показать браузерное уведомление
@@ -1967,7 +1981,7 @@ function handleNewMedicationLog(log) {
         body: `${giverName} отдал(а) лекарство\n${timeLabel}`,
         icon: '💊',
         badge: '💊',
-        tag: 'med-notification',
+        tag: `med-notification-${log.id}`,
         requireInteraction: false
       });
     } catch (e) {
@@ -1975,13 +1989,15 @@ function handleNewMedicationLog(log) {
     }
   }
 
-  // Обновить расписание если открыта вкладка "Сегодня"
-  if (currentFamilyTab === 'schedule') {
-    renderSchedule();
-  }
-  // Обновить историю если открыта вкладка "История"
-  if (currentFamilyTab === 'history') {
-    renderHistory();
+  // Обновить расписание если эта семья выбрана и открыта вкладка "Сегодня"
+  if (log.family_id === selectedFamilyId) {
+    if (currentFamilyTab === 'schedule') {
+      renderSchedule();
+    }
+    // Обновить историю если открыта вкладка "История"
+    if (currentFamilyTab === 'history') {
+      renderHistory();
+    }
   }
 }
 
@@ -2013,14 +2029,6 @@ async function registerServiceWorkerAndSubscribeToPush() {
 
 <!-- PWA Registration -->
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(reg => {
-    console.log('✅ Service Worker зарегистрирован');
-  }).catch(err => {
-    console.log('Service Worker ошибка:', err);
-  });
-}
-
 let installPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
