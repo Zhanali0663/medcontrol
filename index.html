@@ -1075,10 +1075,19 @@ function showAuth() {
 
 function showMainApp() {
   document.getElementById('bottom-nav').style.display = 'flex';
-  // Запросить разрешение на уведомления
+  console.log('%c📱 ГЛАВНОЕ ПРИЛОЖЕНИЕ ГОТОВО', 'font-size: 14px; font-weight: bold; color: green;');
+  
+  // Сразу запросить разрешение на уведомления (без ожидания)
   if (Notification.permission === 'default') {
-    Notification.requestPermission();
+    console.log('🔔 Запрашиваю разрешение на уведомления при входе...');
+    Notification.requestPermission().then(perm => {
+      console.log('Результат:', perm);
+      setupNotifications(); // Переинициализируем после получения ответа
+    });
+  } else {
+    setupNotifications();
   }
+  
   navTo('family');
 }
 
@@ -1377,22 +1386,43 @@ async function toggleMed(medId, timeOfDay, medName) {
 
 // Отправить браузерное уведомление всем в семье
 async function notifyFamilyMembers(medName, giverName) {
-  // Запросить разрешение на уведомления если ещё не было
+  console.log('%c📬 ОТПРАВКА УВЕДОМЛЕНИЯ В СЕМЬЮ', 'font-size: 13px; font-weight: bold; color: green;');
+  console.log('Лекарство:', medName);
+  console.log('Кто дал:', giverName);
+  console.log('Текущее разрешение:', Notification.permission);
+  
+  // Если разрешение ещё не дано - запросить
   if (Notification.permission === 'default') {
-    await Notification.requestPermission();
+    console.log('🔔 Разрешение не дано, запрашиваю...');
+    await Notification.requestPermission().then(perm => {
+      console.log('Результат:', perm);
+    });
   }
 
+  // Если разрешено - отправляем
   if (Notification.permission === 'granted') {
     try {
-      new Notification('💊 МедКонтроль', {
+      const notif = new Notification('💊 МедКонтроль', {
         body: `${giverName} отдал(а) "${medName}"`,
         icon: '💊',
         badge: '💊',
-        tag: 'med-notification'
+        tag: 'med-notification-' + Date.now(),
+        requireInteraction: true,
+        vibrate: [200, 100, 200]
       });
-    } catch (e) {
-      console.log('Notification error:', e);
+      
+      notif.onclick = () => {
+        window.focus();
+        notif.close();
+      };
+      
+      console.log('✅ Уведомление УСПЕШНО отправлено!');
+    } catch (err) {
+      console.error('❌ Ошибка создания уведомления:', err);
     }
+  } else if (Notification.permission === 'denied') {
+    console.warn('⛔ Разрешение ОТКЛОНЕНО пользователем');
+    showToast('Разрешите уведомления в настройках браузера', 'error');
   }
 
   // Сохранить уведомление в базу для истории
@@ -1409,7 +1439,9 @@ async function notifyFamilyMembers(medName, giverName) {
       is_read: m.user_id === currentUser.id
     }));
 
-    await sb.from('notifications').insert(notifications).catch(() => {});
+    await sb.from('notifications').insert(notifications).catch(err => {
+      console.log('⚠️ Ошибка сохранения в базу:', err);
+    });
   }
 }
 
@@ -1921,27 +1953,72 @@ window.addEventListener('DOMContentLoaded', async () => {
 // NOTIFICATION SETUP
 // ═══════════════════════════════════════════
 function setupNotifications() {
-  console.log('🔔 Инициализация уведомлений...');
-  console.log('Поддержка Notification API:', 'Notification' in window);
-  console.log('Текущее разрешение:', Notification.permission);
+  console.log('%c🔔 === ИНИЦИАЛИЗАЦИЯ УВЕДОМЛЕНИЙ ===', 'font-size: 14px; font-weight: bold; color: blue;');
   
+  // Проверка поддержки
+  if (!('Notification' in window)) {
+    console.error('❌ Браузер не поддерживает Notification API');
+    return;
+  }
+  
+  console.log('✅ Поддержка Notification API: ДА');
+  console.log('📋 Текущий статус разрешения:', Notification.permission);
+  
+  // Если уже запрещено - ничего не делаем
+  if (Notification.permission === 'denied') {
+    console.warn('⛔ Уведомления ЗАБЛОКИРОВАНЫ в настройках браузера');
+    console.warn('📌 Чтобы включить: Settings → Privacy → Notifications → найти этот сайт → Allow');
+    return;
+  }
+  
+  // Если уже разрешено - готово
+  if (Notification.permission === 'granted') {
+    console.log('✅ Разрешение УЖЕ ДАНО, уведомления готовы к работе!');
+    testNotification();
+    return;
+  }
+  
+  // Если 'default' - запрашиваем
   if (Notification.permission === 'default') {
-    console.log('📢 Запрашиваю разрешение на уведомления...');
+    console.log('📢 Статус DEFAULT - запрашиваю разрешение...');
     Notification.requestPermission().then(permission => {
-      console.log('✅ Результат запроса разрешения:', permission);
+      console.log('🎯 Результат запроса:', permission);
+      
       if (permission === 'granted') {
-        console.log('🎉 Уведомления включены!');
-        // Тестовое уведомление
-        new Notification('💊 МедКонтроль', {
-          body: 'Уведомления работают! ✅',
-          icon: '💊'
-        });
+        console.log('✅ РАЗРЕШЕНИЕ ПОЛУЧЕНО!');
+        testNotification();
+      } else if (permission === 'denied') {
+        console.warn('⛔ Пользователь ОТКЛОНИЛ разрешение');
+      } else {
+        console.log('❓ Неизвестный статус:', permission);
       }
+    }).catch(err => {
+      console.error('❌ Ошибка при запросе разрешения:', err);
     });
-  } else if (Notification.permission === 'granted') {
-    console.log('✅ Уведомления уже разрешены');
-  } else {
-    console.log('⛔ Уведомления заблокированы. Откройте настройки браузера.');
+  }
+}
+
+// Отправить тестовое уведомление
+function testNotification() {
+  try {
+    console.log('📤 Отправляю тестовое уведомление...');
+    const notif = new Notification('💊 МедКонтроль', {
+      body: 'Уведомления работают! ✅',
+      icon: '💊',
+      badge: '💊',
+      tag: 'test-notification',
+      requireInteraction: false
+    });
+    
+    notif.onclick = () => {
+      console.log('👆 Пользователь кликнул на уведомление');
+      window.focus();
+      notif.close();
+    };
+    
+    console.log('✅ Тестовое уведомление отправлено');
+  } catch (err) {
+    console.error('❌ Ошибка отправки тестового уведомления:', err);
   }
 }
 
