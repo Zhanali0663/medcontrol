@@ -1364,8 +1364,8 @@ async function toggleMed(medId, timeOfDay, medName) {
     if (data) {
       todayLogs.push(data);
       showToast(`✅ ${medName} — принято!`, 'success');
-      // Отправить уведомление всем членам семьи, кроме себя
-      await notifyFamilyMembers(medName, currentProfile?.name || 'Неизвестно', false);
+      // Отправить уведомление всем членам семьи, кроме себя (НЕ показываем себе)
+      await notifyFamilyMembers(medName, currentProfile?.name || 'Неизвестно', true);
     } else if (error?.code === '23505') {
       showToast('Уже отмечено', 'success');
       // Оставляем зелёным
@@ -1389,6 +1389,7 @@ async function notifyFamilyMembers(medName, giverName, skipSelf = true) {
   console.log('%c📬 ОТПРАВКА УВЕДОМЛЕНИЯ В СЕМЬЮ', 'font-size: 13px; font-weight: bold; color: green;');
   console.log('Лекарство:', medName);
   console.log('Кто дал:', giverName);
+  console.log('skipSelf:', skipSelf);
   console.log('Текущее разрешение:', Notification.permission);
   
   // Если разрешение ещё не дано - запросить
@@ -1399,8 +1400,12 @@ async function notifyFamilyMembers(medName, giverName, skipSelf = true) {
     });
   }
 
-  // Не показывать уведомление самому себе
-  if (!skipSelf && Notification.permission === 'granted') {
+  // Показываем уведомление ТОЛЬКО если skipSelf=true (то есть это был МЫ)
+  // и у нас есть разрешение
+  if (skipSelf && Notification.permission === 'granted') {
+    console.log('⚠️ skipSelf=true - НЕ показываем себе уведомление');
+  } else if (!skipSelf && Notification.permission === 'granted') {
+    console.log('✅ skipSelf=false - показываем уведомление ОТ ДРУГОГО');
     try {
       const notif = new Notification('💊 МедКонтроль', {
         body: `${giverName} отдал(а) "${medName}"`,
@@ -1420,10 +1425,9 @@ async function notifyFamilyMembers(medName, giverName, skipSelf = true) {
     }
   } else if (!skipSelf && Notification.permission === 'denied') {
     console.warn('⛔ Разрешение ОТКЛОНЕНО пользователем');
-    showToast('Разрешите уведомления в настройках браузера', 'error');
   }
 
-  // Сохранить уведомление в базу для истории
+  // Сохранить уведомление в базу для истории (ВСЕГДА)
   const { data: members } = await sb.from('family_members')
     .select('user_id')
     .eq('family_id', selectedFamilyId);
@@ -2176,8 +2180,10 @@ function handleDeletedMedicationLog(log) {
 
 function handleNewMedicationLog(log) {
   console.log('🔔 Обработка новой записи:', log);
+  console.log('Текущий пользователь ID:', currentUser.id);
+  console.log('Кто добавил:', log.given_by);
   
-  // Если это мы сами отметили - не показываем звуковое уведомление
+  // Если это мы сами отметили - только обновляем UI, не показываем уведомление
   if (log.given_by === currentUser.id) {
     console.log('👤 Это я сам отметил - только обновляю UI');
     if (log.family_id === selectedFamilyId && currentFamilyTab === 'schedule') {
@@ -2189,7 +2195,7 @@ function handleNewMedicationLog(log) {
         checkBtn.textContent = '✓';
       }
     }
-    return;
+    return; // ← ВЫХОДИМ, не показываем уведомление
   }
 
   // Если этого в наших семьях нет - игнорируем
@@ -2207,17 +2213,21 @@ function handleNewMedicationLog(log) {
 
   console.log(`👁️ УВЕДОМЛЕНИЕ: ${giverName} отдал(а) лекарство (${timeLabel})`);
 
-  // Показать браузерное уведомление
+  // Показать браузерное уведомление ОТ ДРУГОГО пользователя
   if (Notification.permission === 'granted') {
     try {
-      new Notification('💊 МедКонтроль', {
+      const notif = new Notification('💊 МедКонтроль', {
         body: `${giverName} отдал(а) лекарство\n${timeLabel}`,
         icon: '💊',
         badge: '💊',
         tag: 'med-notification-' + log.medication_id + '-' + log.time_of_day,
-        requireInteraction: false,
+        requireInteraction: true,
         vibrate: [200, 100, 200]
       });
+      notif.onclick = () => {
+        window.focus();
+        notif.close();
+      };
       console.log('✅ Браузерное уведомление показано');
     } catch (e) {
       console.error('❌ Ошибка уведомления:', e);
