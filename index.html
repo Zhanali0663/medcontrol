@@ -1508,7 +1508,7 @@ async function renderAdminMeds() {
           ${(med.times || []).map(t => `<span class="time-badge time-${t}">${timeLabels[t] || t}</span>`).join('')}
         </div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="openEditMed('${med.id}','${escapeAttr(med.name)}','${escapeAttr(med.dose)}','${(med.times||[]).join(',')}')">✏️</button>
+      <button class="btn btn-ghost btn-sm" onclick="openEditMed('${med.id}','${escapeAttr(med.name)}','${escapeAttr(med.dose)}','${(med.times||[]).join(',')}', ${med.frequency || 1})">✏️</button>
     </div>
   `).join('');
 }
@@ -1525,6 +1525,7 @@ function openAddMed() {
   document.getElementById('edit-med-id').value = '';
   document.getElementById('med-name-input').value = '';
   document.getElementById('med-dose-input').value = '';
+  document.getElementById('med-frequency').value = '1';
   document.getElementById('time-morning').checked = false;
   document.getElementById('time-afternoon').checked = false;
   document.getElementById('time-evening').checked = false;
@@ -1533,11 +1534,12 @@ function openAddMed() {
   openModal('add-med-modal');
 }
 
-function openEditMed(id, name, dose, timesStr) {
+function openEditMed(id, name, dose, timesStr, frequency) {
   document.getElementById('med-modal-title').textContent = 'Редактировать';
   document.getElementById('edit-med-id').value = id;
   document.getElementById('med-name-input').value = name;
   document.getElementById('med-dose-input').value = dose;
+  document.getElementById('med-frequency').value = frequency || 1;
   const times = timesStr ? timesStr.split(',') : [];
   document.getElementById('time-morning').checked = times.includes('morning');
   document.getElementById('time-afternoon').checked = times.includes('afternoon');
