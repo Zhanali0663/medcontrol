@@ -1146,6 +1146,9 @@ async function loadFamilyScreen() {
     datePickerEl.hasListener = true;
   }
   
+  // Подписаться на real-time уведомления СРАЗУ после загрузки семей
+  subscribeToMedicationChanges();
+  
   await renderSchedule();
 }
 
@@ -1824,8 +1827,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       showMainApp();
       // Запустить проверку напоминаний
       startReminderCheck();
-      // Подписаться на real-time уведомления
-      subscribeToMedicationChanges();
       // Зарегистрировать Service Worker и запросить push
       registerServiceWorkerAndSubscribeToPush();
     } else {
@@ -1929,19 +1930,24 @@ async function checkAndSendReminders() {
 let realtimeSubscription = null;
 
 function subscribeToMedicationChanges() {
-  if (!currentUser || !userFamilies || userFamilies.length === 0) return;
+  if (!currentUser || !userFamilies || userFamilies.length === 0) {
+    console.log('❌ Нельзя подписаться - нет семей');
+    return;
+  }
 
   // Отписаться от старой подписки если есть
   if (realtimeSubscription) {
-    realtimeSubscription.unsubscribe();
+    try {
+      realtimeSubscription.unsubscribe();
+    } catch (e) {}
   }
 
-  // Получить ID всех семей пользователя
-  const familyIds = userFamilies.map(f => f.id);
-  
-  // Подписаться на изменения в medication_logs для всех семей
+  console.log('🔄 Подписываемся на real-time уведомления...');
+  console.log('Семьи:', userFamilies.map(f => f.id));
+
+  // Подписаться на изменения в medication_logs
   realtimeSubscription = sb
-    .channel('medication_changes')
+    .channel('medication_logs_changes')
     .on(
       'postgres_changes',
       {
@@ -1950,22 +1956,33 @@ function subscribeToMedicationChanges() {
         table: 'medication_logs'
       },
       (payload) => {
-        // Проверяем, есть ли эта семья в наших семьях
-        if (familyIds.includes(payload.new.family_id)) {
-          handleNewMedicationLog(payload.new);
-        }
+        console.log('📨 Получено изменение:', payload);
+        handleNewMedicationLog(payload.new);
       }
     )
-    .subscribe((status) => {
+    .subscribe((status, err) => {
+      console.log('Статус подписки:', status);
+      if (err) console.error('Ошибка подписки:', err);
       if (status === 'SUBSCRIBED') {
-        console.log('✅ Подписаны на real-time уведомления');
+        console.log('✅ Успешно подписались на real-time уведомления');
       }
     });
 }
 
 function handleNewMedicationLog(log) {
+  console.log('🔔 Обработка записи:', log);
+  
   // Если это мы сами отметили - не показываем уведомление
-  if (log.given_by === currentUser.id) return;
+  if (log.given_by === currentUser.id) {
+    console.log('👤 Это сам пользователь - игнорируем');
+    return;
+  }
+
+  // Если этого в наших семьях нет - игнорируем
+  if (!userFamilies.find(f => f.id === log.family_id)) {
+    console.log('❌ Семья не в нашем списке - игнорируем');
+    return;
+  }
 
   const giverName = log.given_by_name || 'Кто-то';
   const timeLabel = {
@@ -1977,20 +1994,22 @@ function handleNewMedicationLog(log) {
   // Показать браузерное уведомление
   if (Notification.permission === 'granted') {
     try {
-      new Notification('💊 МедКонтроль', {
+      const notif = new Notification('💊 МедКонтроль', {
         body: `${giverName} отдал(а) лекарство\n${timeLabel}`,
         icon: '💊',
         badge: '💊',
         tag: `med-notification-${log.id}`,
         requireInteraction: false
       });
+      console.log('✅ Уведомление показано');
     } catch (e) {
-      console.log('Notification error:', e);
+      console.log('❌ Ошибка уведомления:', e);
     }
   }
 
   // Обновить расписание если эта семья выбрана и открыта вкладка "Сегодня"
   if (log.family_id === selectedFamilyId) {
+    console.log('🔄 Обновляю UI для выбранной семьи');
     if (currentFamilyTab === 'schedule') {
       renderSchedule();
     }
