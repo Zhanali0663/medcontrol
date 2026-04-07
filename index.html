@@ -1875,28 +1875,64 @@ window.addEventListener('DOMContentLoaded', async () => {
   try {
     const { data: { session }, error } = await sb.auth.getSession();
     if (error) throw error;
+    
     if (session) {
       currentUser = session.user;
+      console.log('👤 Пользователь:', currentUser.email);
       await loadProfile();
+      console.log('✅ Профиль загружен:', currentProfile?.name);
+      appInitialized = true;
       showMainApp();
+      // Инициализировать уведомления
+      setupNotifications();
       // Запустить проверку напоминаний
       startReminderCheck();
       // Зарегистрировать Service Worker и запросить push
       registerServiceWorkerAndSubscribeToPush();
     } else {
+      console.log('❌ Сессия не найдена - показываю форму входа');
+      appInitialized = true;
       showAuth();
     }
   } catch (err) {
-    console.error("Ошибка инициализации:", err);
+    console.error("❌ Ошибка инициализации:", err);
+    appInitialized = true;
     showAuth();
   } finally {
-    appInitialized = true;
     if (loader) {
       loader.style.opacity = '0';
       setTimeout(() => loader.style.display = 'none', 400);
     }
   }
 });
+
+// ═══════════════════════════════════════════
+// NOTIFICATION SETUP
+// ═══════════════════════════════════════════
+function setupNotifications() {
+  console.log('🔔 Инициализация уведомлений...');
+  console.log('Поддержка Notification API:', 'Notification' in window);
+  console.log('Текущее разрешение:', Notification.permission);
+  
+  if (Notification.permission === 'default') {
+    console.log('📢 Запрашиваю разрешение на уведомления...');
+    Notification.requestPermission().then(permission => {
+      console.log('✅ Результат запроса разрешения:', permission);
+      if (permission === 'granted') {
+        console.log('🎉 Уведомления включены!');
+        // Тестовое уведомление
+        new Notification('💊 МедКонтроль', {
+          body: 'Уведомления работают! ✅',
+          icon: '💊'
+        });
+      }
+    });
+  } else if (Notification.permission === 'granted') {
+    console.log('✅ Уведомления уже разрешены');
+  } else {
+    console.log('⛔ Уведомления заблокированы. Откройте настройки браузера.');
+  }
+}
 
 // ═══════════════════════════════════════════
 // REMINDERS
