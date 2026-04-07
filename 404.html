@@ -4,23 +4,21 @@
   <meta charset="utf-8">
   <title>МедКонтроль</title>
   <script>
-    // GitHub Pages SPA router - редирект всех 404 на index.html
-    var pathnames = window.location.pathname.split('/').filter(p => p);
+    // Простой редирект на index.html для всех 404
+    var segment = window.location.pathname.split('/').pop();
     
-    // Если это файл с расширением или папка - не перенаправляем
-    if (pathnames.length > 0 && pathnames[pathnames.length - 1].indexOf('.') > -1) {
-      // это файл, оставляем как есть
+    // Если это не файл - перенаправляем на index.html
+    if (!segment.includes('.') && segment !== '') {
+      var path = window.location.pathname.split('/');
+      var baseUrl = '/' + path[1] + '/'; // Получить /repo-name/
+      window.location.replace(baseUrl + 'index.html' + window.location.hash);
     } else {
-      // это страница SPA - перенаправляем на index.html
-      window.location.replace(
-        window.location.pathname.replace(/\/$/, '') + 
-        (window.location.search ? window.location.search : '?redirect=true') +
-        window.location.hash
-      );
+      // Если файл - перенаправляем как есть
+      window.location.replace(window.location.pathname.replace('/404.html', '') + window.location.search + window.location.hash);
     }
   </script>
 </head>
 <body>
-  <p>Перенаправление...</p>
+  Перенаправление...
 </body>
 </html>

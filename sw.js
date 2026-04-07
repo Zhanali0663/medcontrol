@@ -31,13 +31,18 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch: сеть первой, потом кэш
+// Fetch: сеть первой, потом кэш, потом index.html для SPA
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   
   event.respondWith(
     fetch(event.request)
       .then(response => {
+        // Если ошибка 404 и это не файл - показать index.html
+        if (response.status === 404 && !event.request.url.includes('.')) {
+          return caches.match('./index.html') || fetch('./index.html');
+        }
+        
         if (response.ok) {
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, response.clone());
@@ -46,8 +51,9 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() => {
+        // Офлайн - пытаемся вернуть из кэша
         return caches.match(event.request).then(response => {
-          return response || new Response('Нет интернета', { status: 503 });
+          return response || caches.match('./index.html') || new Response('Нет интернета', { status: 503 });
         });
       })
   );
