@@ -944,19 +944,27 @@ let todayMeds = [];
 let historyDate = new Date().toISOString().split('T')[0];
 
 // ═══════════════════════════════════════════
-// AUTH STATE CHANGE — только логин/логаут внутри сессии
+// AUTH STATE CHANGE
 // ═══════════════════════════════════════════
 let appInitialized = false;
+
+// Слушатель для смены сессии ПОСЛЕ инициализации
 sb.auth.onAuthStateChange(async (event, session) => {
-  if (!appInitialized) return;
-  if (event === 'SIGNED_IN' && session) {
-    currentUser = session.user;
-    await loadProfile();
-    showMainApp();
-  } else if (event === 'SIGNED_OUT') {
-    currentUser = null;
-    currentProfile = null;
-    showAuth();
+  console.log('🔐 Auth event:', event, 'Has session:', !!session, 'App init:', appInitialized);
+  
+  // Обрабатываем события смены сессии только после инициализации
+  if (appInitialized) {
+    if (event === 'SIGNED_IN' && session) {
+      console.log('✅ Пользователь вошёл во время сессии');
+      currentUser = session.user;
+      await loadProfile();
+      showMainApp();
+    } else if (event === 'SIGNED_OUT') {
+      console.log('👋 Пользователь вышел');
+      currentUser = null;
+      currentProfile = null;
+      showAuth();
+    }
   }
 });
 
@@ -1736,6 +1744,7 @@ async function renderHistory() {
   if (!filteredMeds || filteredMeds.length === 0) {
     content.innerHTML = `
       <div class="empty" style="padding:40px 20px">
+       
         <div class="empty-icon">📋</div>
         <p>На эту дату нет лекарств для приёма</p>
       </div>
@@ -1877,20 +1886,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (error) throw error;
     
     if (session) {
+      console.log('✅ Найдена активная сессия:', session.user.email);
       currentUser = session.user;
-      console.log('👤 Пользователь:', currentUser.email);
       await loadProfile();
-      console.log('✅ Профиль загружен:', currentProfile?.name);
+      console.log('👤 Профиль загружен:', currentProfile?.name);
+      // ВАЖНО: инициализируем приложение БЕЗ показа формы входа
       appInitialized = true;
       showMainApp();
-      // Инициализировать уведомления
       setupNotifications();
-      // Запустить проверку напоминаний
       startReminderCheck();
-      // Зарегистрировать Service Worker и запросить push
       registerServiceWorkerAndSubscribeToPush();
     } else {
-      console.log('❌ Сессия не найдена - показываю форму входа');
+      console.log('❌ Сессия не найдена');
       appInitialized = true;
       showAuth();
     }
