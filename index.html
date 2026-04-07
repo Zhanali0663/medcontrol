@@ -1975,7 +1975,6 @@ function setupNotifications() {
   // Если уже разрешено - готово
   if (Notification.permission === 'granted') {
     console.log('✅ Разрешение УЖЕ ДАНО, уведомления готовы к работе!');
-    testNotification();
     return;
   }
   
@@ -2001,26 +2000,8 @@ function setupNotifications() {
 
 // Отправить тестовое уведомление
 function testNotification() {
-  try {
-    console.log('📤 Отправляю тестовое уведомление...');
-    const notif = new Notification('💊 МедКонтроль', {
-      body: 'Уведомления работают! ✅',
-      icon: '💊',
-      badge: '💊',
-      tag: 'test-notification',
-      requireInteraction: false
-    });
-    
-    notif.onclick = () => {
-      console.log('👆 Пользователь кликнул на уведомление');
-      window.focus();
-      notif.close();
-    };
-    
-    console.log('✅ Тестовое уведомление отправлено');
-  } catch (err) {
-    console.error('❌ Ошибка отправки тестового уведомления:', err);
-  }
+  // Убрано - не нужно показывать уведомление при входе
+  console.log('✅ Уведомления готовы к работе');
 }
 
 function registerServiceWorkerAndSubscribeToPush() {
