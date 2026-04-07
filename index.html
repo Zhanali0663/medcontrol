@@ -1882,22 +1882,26 @@ async function removeFamilyMember(memberId, memberName) {
 window.addEventListener('DOMContentLoaded', async () => {
   const loader = document.getElementById('loader');
   try {
-    const { data: { session }, error } = await sb.auth.getSession();
-    if (error) throw error;
+    // Получить текущего пользователя (работает даже если сессия истекла но есть refresh token)
+    const { data: { user }, error } = await sb.auth.getUser();
     
-    if (session) {
-      console.log('✅ Найдена активная сессия:', session.user.email);
-      currentUser = session.user;
+    if (error) {
+      console.log('⚠️ Ошибка getUser:', error.message);
+      throw error;
+    }
+    
+    if (user) {
+      console.log('✅ Найден сохранённый пользователь:', user.email);
+      currentUser = user;
       await loadProfile();
       console.log('👤 Профиль загружен:', currentProfile?.name);
-      // ВАЖНО: инициализируем приложение БЕЗ показа формы входа
       appInitialized = true;
       showMainApp();
       setupNotifications();
       startReminderCheck();
       registerServiceWorkerAndSubscribeToPush();
     } else {
-      console.log('❌ Сессия не найдена');
+      console.log('❌ Пользователь не найден - показываю форму входа');
       appInitialized = true;
       showAuth();
     }
@@ -1938,6 +1942,16 @@ function setupNotifications() {
     console.log('✅ Уведомления уже разрешены');
   } else {
     console.log('⛔ Уведомления заблокированы. Откройте настройки браузера.');
+  }
+}
+
+function registerServiceWorkerAndSubscribeToPush() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('✅ Service Worker зарегистрирован');
+    }).catch(err => {
+      console.log('⚠️ Service Worker ошибка:', err);
+    });
   }
 }
 
