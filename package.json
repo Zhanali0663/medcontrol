@@ -1,0 +1,23 @@
+{
+  "name": "medcontrol",
+  "version": "1.0.0",
+  "description": "Контроль приёма лекарств для всей семьи",
+  "main": "index(2).html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "preview": "python -m http.server 8080"
+  },
+  "keywords": [
+    "health",
+    "medication",
+    "family",
+    "pwa",
+    "webapp"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/medcontrol.git"
+  }
+}

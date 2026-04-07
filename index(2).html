@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>МедКонтроль</title>
+<meta name="theme-color" content="#4f6ef7">
+<meta name="description" content="Контроль приёма лекарств для всей семьи">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="МедКонтроль">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%234f6ef7' width='192' height='192' rx='45'/><text x='50%' y='50%' font-size='120' fill='white' text-anchor='middle' dominant-baseline='middle' font-weight='900'>💊</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+  :root {
+    --bg: #f0f4ff;
+    --card: #ffffff;
+    --primary: #4f6ef7;
+    --primary-dark: #3a56d4;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #1e2536;
+    --text2: #6b7280;
+    --border: #e5e7eb;
+    --shadow: 0 4px 24px rgba(79,110,247,0.10);
+    --radius: 18px;
+    --radius-sm: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    position: relative;
+  }
+
+  /* ── LOADER ── */
+  #loader {
+    position: fixed; inset: 0;
+    background: var(--primary);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; color: white;
+    transition: opacity 0.4s;
+  }
+  #loader .logo { font-size: 48px; margin-bottom: 12px; }
+  #loader h1 { font-size: 26px; font-weight: 900; }
+  #loader p { opacity: .7; margin-top: 6px; }
+
+  /* ── SCREEN ── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    padding-bottom: 80px;
+  }
+  .screen.active { display: flex; }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 20px 20px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header h2 { font-size: 22px; font-weight: 900; }
+  .header-back {
+    background: var(--card);
+    border: none;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow);
+  }
+
+  /* ── AUTH SCREEN ── */
+  #screen-auth {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    gap: 0;
+  }
+  .auth-logo { font-size: 64px; margin-bottom: 12px; }
+  .auth-title { font-size: 32px; font-weight: 900; color: var(--primary); margin-bottom: 4px; }
+  .auth-sub { color: var(--text2); font-size: 14px; margin-bottom: 32px; text-align: center; }
+
+  .auth-tabs {
+    display: flex;
+    background: var(--card);
+    border-radius: 14px;
+    padding: 4px;
+    width: 100%;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .auth-tab {
+    flex: 1; padding: 10px;
+    border: none; background: transparent;
+    border-radius: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; color: var(--text2);
+    transition: all 0.2s;
+  }
+  .auth-tab.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  .auth-form { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+
+  /* ── INPUTS ── */
+  .input-group { display: flex; flex-direction: column; gap: 4px; }
+  .input-group label { font-size: 13px; font-weight: 700; color: var(--text2); padding-left: 4px; }
+  input, select {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    background: var(--card);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--primary); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 14px 20px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+  }
+  .btn-ghost {
+    background: var(--card);
+    color: var(--text);
+    box-shadow: var(--shadow);
+  }
+  .btn-sm { padding: 8px 14px; font-size: 13px; }
+  .btn-full { width: 100%; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    max-width: 480px;
+    background: var(--card);
+    display: flex;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 4px 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text2);
+    font-family: 'Nunito', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    transition: all 0.2s;
+    gap: 4px;
+  }
+  .nav-item .nav-icon { font-size: 22px; }
+  .nav-item.active { color: var(--primary); }
+  .nav-item.active .nav-icon { transform: translateY(-2px); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    margin: 0 16px 12px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 14px;
+  }
+
+  /* ── FAMILY SCREEN ── */
+  .schedule-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 16px;
+  }
+  .schedule-tab {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--text2);
+    transition: all 0.2s;
+  }
+  .schedule-tab.active {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #eef0ff;
+  }
+
+  /* ── MED ITEM ── */
+  .med-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 14px;
+  }
+  .med-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .med-item:first-child { padding-top: 0; }
+
+  .med-check {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+  .med-check.done {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+  }
+  .med-check.undone {
+    background: transparent;
+    border-color: var(--border);
+  }
+
+  .med-info { flex: 1; }
+  .med-name { font-weight: 800; font-size: 15px; }
+  .med-dose { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .med-given-by { font-size: 11px; color: var(--success); margin-top: 3px; font-weight: 700; }
+
+  .time-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .time-morning { background: #fef3c7; color: #92400e; }
+  .time-afternoon { background: #dbeafe; color: #1e40af; }
+  .time-evening { background: #ede9fe; color: #5b21b6; }
+
+  /* ── MEMBER ITEM ── */
+  .member-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .member-item:last-child { border-bottom: none; }
+  .member-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 16px;
+    flex-shrink: 0;
+  }
+  .member-name { font-weight: 700; }
+  .member-badge {
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    background: #eef0ff;
+    color: var(--primary);
+  }
+
+  /* ── ADMIN SCREEN ── */
+  .family-selector {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .family-card-admin {
+    background: var(--card);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .family-card-admin.selected { border-color: var(--primary); }
+  .family-card-admin h3 { font-size: 16px; font-weight: 800; }
+  .family-code { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  /* ── MED EDIT ITEM ── */
+  .med-edit-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+  .med-edit-item:last-child { border-bottom: none; }
+  .med-edit-info { flex: 1; }
+  .med-edit-name { font-weight: 800; font-size: 14px; }
+  .med-edit-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .med-edit-times { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%;
+    max-width: 480px;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal h3 { font-size: 20px; font-weight: 900; margin-bottom: 20px; }
+  .modal-form { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── TIME CHECKBOXES ── */
+  .time-checks { display: flex; gap: 8px; flex-wrap: wrap; }
+  .time-check-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .time-check-label input { display: none; }
+  .time-check-label:has(input:checked) {
+    border-color: var(--primary);
+    background: #eef0ff;
+    color: var(--primary);
+  }
+
+  /* ── FAMILY CREATE/JOIN ── */
+  .create-join-options {
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .option-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .option-icon { font-size: 36px; }
+  .option-title { font-size: 18px; font-weight: 900; }
+  .option-desc { font-size: 13px; color: var(--text2); }
+
+  /* ── CODE DISPLAY ── */
+  .code-box {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    text-align: center;
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 8px;
+    color: var(--primary);
+    margin-top: 8px;
+    cursor: pointer;
+  }
+  .code-hint { text-align: center; font-size: 12px; color: var(--text2); margin-top: 8px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--text);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    z-index: 9999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+    max-width: 90vw;
+    text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text2);
+  }
+  .empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; line-height: 1.6; }
+
+  /* ── PROFILE ── */
+  .profile-avatar {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 900;
+    margin: 0 auto 16px;
+  }
+
+  /* ── DATE DISPLAY ── */
+  .date-display {
+    padding: 4px 16px 12px;
+    font-size: 13px;
+    color: var(--text2);
+    font-weight: 700;
+  }
+
+  .section-label {
+    padding: 8px 16px 4px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 3px solid rgba(255,255,255,.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .undo-btn {
+    font-size: 11px;
+    color: var(--danger);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    padding: 2px 6px;
+    margin-left: 4px;
+  }
+
+  /* ── HISTORY ── */
+  .history-day-section {
+    margin-bottom: 20px;
+  }
+  .history-day-header {
+    padding: 0 16px 8px;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .history-item {
+    background: var(--card);
+    padding: 14px 16px;
+    margin: 0 16px 8px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .history-check {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--success);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .history-info {
+    flex: 1;
+  }
+  .history-med-name {
+    font-weight: 800;
+    font-size: 14px;
+  }
+  .history-meta {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 3px;
+  }
+  .history-time {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 12px;
+  }
+  .history-given-by {
+    font-size: 11px;
+    color: var(--success);
+    margin-top: 2px;
+  }
+  .history-summary {
+    background: var(--card);
+    padding: 16px;
+    margin: 0 16px 16px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .summary-stat {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--primary);
+  }
+  .summary-label {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  /* ── NOTIFICATIONS ── */
+  .notification-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 18px;
+    height: 18px;
+    background: var(--danger);
+    color: white;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="logo">💊</div>
+  <h1>МедКонтроль</h1>
+  <p>Загрузка...</p>
+</div>
+
+<div id="app">
+
+  <!-- ══════════════ AUTH SCREEN ══════════════ -->
+  <div id="screen-auth" class="screen" style="display:none">
+    <div class="auth-logo">💊</div>
+    <div class="auth-title">МедКонтроль</div>
+    <div class="auth-sub">Контроль приёма лекарств для всей семьи</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Войти</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-form" class="auth-form">
+      <div class="input-group">
+        <label>Почта</label>
+        <input type="email" id="login-email" placeholder="you@example.com">
+      </div>
+      <div class="input-group">
+        <label>Пароль</label>
+        <input type="password" id="login-pass" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Войти</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-form" class="auth-form" style="display:none">
+      <div class="input-group">
+        <label>Имя</label>
+        <input type="text" id="reg-name" placeholder="Ваше имя">
+      </div>
+      <div class="input-group">
+        <label>Почта</label>
+        <input type="email" id="reg-email" placeholder="you@example.com">
+      </div>
+      <div class="input-group">
+        <label>Пароль</label>
+        <input type="password" id="reg-pass" placeholder="••••••••">
+      </div>
+      <div class="input-group">
+        <label>Повторите пароль</label>
+        <input type="password" id="reg-pass2" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doRegister()">Создать аккаунт</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ FAMILY SCREEN ══════════════ -->
+  <div id="screen-family" class="screen">
+    <div class="header">
+      <h2 id="family-header-title">Моя семья</h2>
+      <button class="btn btn-sm btn-ghost" onclick="refreshFamily()" id="refresh-btn">🔄</button>
+    </div>
+    
+    <div style="padding:0 16px 12px">
+      <select id="family-selector" onchange="changeFamilySelection()" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--border); font-size:15px; font-weight:700;">
+        <option value="">Выберите семью...</option>
+      </select>
+    </div>
+
+    <div class="date-display" id="today-date"></div>
+
+    <div id="no-family-msg" class="empty" style="display:none">
+      <div class="empty-icon">👨‍👩‍👧‍👦</div>
+      <p>Вы ещё не в семье.<br>Создайте или вступите в семью.</p>
+      <br>
+      <button class="btn btn-primary" onclick="navTo('create-join')">Создать / Вступить</button>
+    </div>
+
+    <div id="family-content" style="display:none">
+      <div class="schedule-tabs">
+        <button class="schedule-tab active" onclick="switchFamilyTab('schedule')" id="tab-schedule">📋 Сегодня</button>
+        <button class="schedule-tab" onclick="switchFamilyTab('history')" id="tab-history">📅 История</button>
+        <button class="schedule-tab" onclick="switchFamilyTab('members')" id="tab-members">👥 Участники</button>
+      </div>
+
+      <!-- SCHEDULE -->
+      <div id="family-schedule">
+        <div id="schedule-morning" style="display:none">
+          <div class="section-label">🌅 Утро</div>
+          <div class="card" id="list-morning"></div>
+        </div>
+        <div id="schedule-afternoon" style="display:none">
+          <div class="section-label">☀️ День</div>
+          <div class="card" id="list-afternoon"></div>
+        </div>
+        <div id="schedule-evening" style="display:none">
+          <div class="section-label">🌙 Вечер</div>
+          <div class="card" id="list-evening"></div>
+        </div>
+        <div id="no-meds-msg" class="empty" style="display:none">
+          <div class="empty-icon">💊</div>
+          <p>Список лекарств пуст.<br>Администратор должен добавить лекарства.</p>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div id="family-history" style="display:none">
+        <div style="padding:0 16px 12px">
+          <input type="date" id="history-date-picker" style="width:100%">
+        </div>
+        <div id="history-content"></div>
+      </div>
+
+      <!-- MEMBERS -->
+      <div id="family-members" style="display:none">
+        <div class="card">
+          <div class="card-title">Участники семьи</div>
+          <div id="members-list"></div>
+        </div>
+        <div style="padding:0 16px; margin-top:16px; display:flex; flex-direction:column; gap:10px">
+          <button class="btn btn-danger btn-full" onclick="leaveFamily()" id="leave-family-btn">
+            🚪 Выйти из семьи
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ CREATE/JOIN SCREEN ══════════════ -->
+  <div id="screen-create-join" class="screen">
+    <div class="header">
+      <h2>Семья</h2>
+    </div>
+    <div class="create-join-options">
+      <!-- CREATE -->
+      <div class="option-card">
+        <div class="option-icon">🏠</div>
+        <div class="option-title">Создать семью</div>
+        <div class="option-desc">Вы станете администратором и получите код для приглашения</div>
+        <div class="input-group">
+          <label>Название</label>
+          <input type="text" id="create-family-name" placeholder="Например: Семья Иванов">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="createFamily()">Создать</button>
+        <div id="created-code-box" style="display:none">
+          <div class="card-title" style="margin-bottom:8px">✅ Семья создана! Код для вступления:</div>
+          <div class="code-box" id="family-code-display" onclick="copyCode()"></div>
+          <div class="code-hint">Нажмите на код чтобы скопировать</div>
+        </div>
+      </div>
+
+      <!-- JOIN -->
+      <div class="option-card">
+        <div class="option-icon">🔑</div>
+        <div class="option-title">Вступить в семью</div>
+        <div class="option-desc">Введите код который дал вам администратор</div>
+        <div class="input-group">
+          <label>Код семьи</label>
+          <input type="text" id="join-code" placeholder="000000" maxlength="6" style="font-size:24px; font-weight:900; letter-spacing:4px; text-align:center">
+        </div>
+        <button class="btn btn-outline btn-full" onclick="joinFamily()">Вступить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ PROFILE SCREEN ══════════════ -->
+  <div id="screen-profile" class="screen">
+    <div class="header">
+      <h2>Профиль</h2>
+    </div>
+    <div style="padding: 0 16px; display:flex; flex-direction:column; gap:16px">
+      <div class="card" style="text-align:center">
+        <div class="profile-avatar" id="profile-avatar"></div>
+        <div id="profile-name-display" style="font-size:20px; font-weight:900;"></div>
+        <div id="profile-email-display" style="font-size:13px; color:var(--text2); margin-top:4px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Изменить имя</div>
+        <div class="auth-form">
+          <div class="input-group">
+            <label>Новое имя</label>
+            <input type="text" id="new-name-input" placeholder="Введите имя">
+          </div>
+          <button class="btn btn-primary btn-full" onclick="updateName()">Сохранить</button>
+        </div>
+      </div>
+
+      <button class="btn btn-danger btn-full" onclick="doLogout()">Выйти из аккаунта</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ ADMIN SCREEN ══════════════ -->
+  <div id="screen-admin" class="screen">
+    <div class="header">
+      <h2>Администратор</h2>
+    </div>
+
+    <div id="admin-no-families" class="empty" style="display:none">
+      <div class="empty-icon">👑</div>
+      <p>У вас нет семей.<br>Сначала создайте семью.</p>
+      <br>
+      <button class="btn btn-primary" onclick="navTo('create-join')">Создать семью</button>
+    </div>
+
+    <div id="admin-families-section" style="display:none">
+      <div class="section-label" style="padding:0 16px 8px">Выберите семью:</div>
+      <div class="family-selector" id="admin-family-list"></div>
+    </div>
+
+    <div id="admin-meds-section" style="display:none">
+      <div style="padding: 0 16px; margin-bottom:12px">
+        <div id="admin-family-name-display" style="font-size:18px; font-weight:900; margin-bottom:8px;"></div>
+        <button class="btn btn-primary btn-full" onclick="openAddMed()">➕ Добавить лекарство</button>
+      </div>
+
+      <div class="card" id="admin-meds-list">
+        <div class="empty" style="padding:20px 0">
+          <div class="empty-icon">💊</div>
+          <p>Нет лекарств. Добавьте первое!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ BOTTOM NAV ══════════════ -->
+  <nav class="bottom-nav" id="bottom-nav" style="display:none">
+    <button class="nav-item active" onclick="navTo('family')" id="nav-family">
+      <span class="nav-icon">🏠</span>
+      <span>Семья</span>
+    </button>
+    <button class="nav-item" onclick="navTo('create-join')" id="nav-create-join">
+      <span class="nav-icon">👥</span>
+      <span>Вступить</span>
+    </button>
+    <button class="nav-item" onclick="navTo('profile')" id="nav-profile">
+      <span class="nav-icon">👤</span>
+      <span>Профиль</span>
+    </button>
+    <button class="nav-item" onclick="navTo('admin')" id="nav-admin">
+      <span class="nav-icon">👑</span>
+      <span>Управление</span>
+    </button>
+  </nav>
+
+</div><!-- /#app -->
+
+<!-- ══════════════ ADD MED MODAL ══════════════ -->
+<div class="modal-overlay" id="add-med-modal">
+  <div class="modal">
+    <h3 id="med-modal-title">Добавить лекарство</h3>
+    <div class="modal-form">
+      <input type="hidden" id="edit-med-id">
+      <div class="input-group">
+        <label>Название препарата</label>
+        <input type="text" id="med-name-input" placeholder="Например: Аспирин">
+      </div>
+      <div class="input-group">
+        <label>Доза</label>
+        <input type="text" id="med-dose-input" placeholder="Например: 1 таблетка">
+      </div>
+      <div class="input-group">
+        <label>Время приёма</label>
+        <div class="time-checks">
+          <label class="time-check-label">
+            <input type="checkbox" id="time-morning" value="morning"> 🌅 Утро (08:00)
+          </label>
+          <label class="time-check-label">
+            <input type="checkbox" id="time-afternoon" value="afternoon"> ☀️ День (14:00)
+          </label>
+          <label class="time-check-label">
+            <input type="checkbox" id="time-evening" value="evening"> 🌙 Вечер (20:00)
+          </label>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Включить напоминания</label>
+        <label class="time-check-label">
+          <input type="checkbox" id="med-enable-reminders"> 🔔 Отправлять уведомления перед приёмом
+        </label>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveMed()" id="save-med-btn">Сохранить</button>
+      <button class="btn btn-danger btn-full" onclick="deleteMed()" id="delete-med-btn" style="display:none">Удалить</button>
+      <button class="btn btn-ghost btn-full" onclick="closeModal()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// SUPABASE INIT
+// ═══════════════════════════════════════════
+const SUPABASE_URL = 'https://hfezfxdxdvmtpqvdgaah.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhmZXpmeGR4ZHZtdHBxdmRnYWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTM3MTMsImV4cCI6MjA5MTA4OTcxM30.qw5nA3UQafFI8WzyP9zD19tmXTHA5X_HrBJYUDAotPA';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Вывести сообщение о готовности
+console.log('%c✅ МедКонтроль загружается...', 'font-size: 16px; font-weight: bold; color: blue;');
+console.log('%cЧтобы протестировать функции, откройте DevTools (F12) → Console', 'font-size: 12px; color: gray;');
+console.log('%cИ скопируйте содержимое test-console.js', 'font-size: 12px; color: gray;');
+
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let currentUser = null;
+let currentProfile = null;
+let userFamilies = [];    // families user is member of
+let adminFamilies = [];   // families user is admin of
+let selectedFamilyId = null;
+let selectedAdminFamilyId = null;
+let currentFamilyTab = 'schedule';
+let todayLogs = [];
+let todayMeds = [];
+let historyDate = new Date().toISOString().split('T')[0];
+
+// ═══════════════════════════════════════════
+// AUTH STATE CHANGE — только логин/логаут внутри сессии
+// ═══════════════════════════════════════════
+let appInitialized = false;
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (!appInitialized) return;
+  if (event === 'SIGNED_IN' && session) {
+    currentUser = session.user;
+    await loadProfile();
+    showMainApp();
+  } else if (event === 'SIGNED_OUT') {
+    currentUser = null;
+    currentProfile = null;
+    showAuth();
+  }
+});
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+function switchAuthTab(tab) {
+  document.getElementById('login-form').style.display = tab === 'login' ? 'flex' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? 'flex' : 'none';
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+  });
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if (!email || !pass) return showToast('Заполните все поля', 'error');
+
+  const btn = document.querySelector('#login-form .btn-primary');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.innerHTML = 'Войти'; btn.disabled = false;
+  if (error) return showToast('Неверный email или пароль', 'error');
+  showToast('Добро пожаловать! 👋', 'success');
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+
+  if (!name || !email || !pass || !pass2) return showToast('Заполните все поля', 'error');
+  if (pass !== pass2) return showToast('Пароли не совпадают', 'error');
+  if (pass.length < 6) return showToast('Пароль минимум 6 символов', 'error');
+
+  const btn = document.querySelector('#register-form .btn-primary');
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+
+  const { data, error } = await sb.auth.signUp({
+    email, password: pass,
+    options: { data: { name } }
+  });
+  btn.innerHTML = 'Создать аккаунт'; btn.disabled = false;
+
+  if (error) return showToast(error.message, 'error');
+
+  // Ensure profile exists
+  if (data.user) {
+    await sb.from('profiles').upsert({ id: data.user.id, name });
+  }
+  showToast('Аккаунт создан! ✅', 'success');
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  showToast('До свидания! 👋');
+}
+
+// ═══════════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════════
+async function loadProfile() {
+  const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (data) {
+    currentProfile = data;
+  } else {
+    // Create profile if missing
+    const name = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+    await sb.from('profiles').upsert({ id: currentUser.id, name });
+    currentProfile = { id: currentUser.id, name };
+  }
+}
+
+function renderProfile() {
+  const name = currentProfile?.name || '?';
+  const email = currentUser?.email || '';
+  document.getElementById('profile-avatar').textContent = name[0]?.toUpperCase() || '?';
+  document.getElementById('profile-name-display').textContent = name;
+  document.getElementById('profile-email-display').textContent = email;
+  document.getElementById('new-name-input').value = name;
+}
+
+async function updateName() {
+  const name = document.getElementById('new-name-input').value.trim();
+  if (!name) return showToast('Введите имя', 'error');
+
+  const { error } = await sb.from('profiles').update({ name }).eq('id', currentUser.id);
+  if (error) return showToast('Ошибка', 'error');
+  currentProfile.name = name;
+  renderProfile();
+  showToast('Имя обновлено ✅', 'success');
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showAuth() {
+  document.getElementById('bottom-nav').style.display = 'none';
+  document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+  const authScreen = document.getElementById('screen-auth');
+  authScreen.style.display = 'flex';
+  authScreen.classList.add('active');
+}
+
+function showMainApp() {
+  document.getElementById('bottom-nav').style.display = 'flex';
+  // Запросить разрешение на уведомления
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  navTo('family');
+}
+
+async function navTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  const screenEl = document.getElementById('screen-' + screen);
+  if (screenEl) { screenEl.style.display = 'flex'; screenEl.classList.add('active'); }
+
+  const navEl = document.getElementById('nav-' + screen);
+  if (navEl) navEl.classList.add('active');
+
+  if (screen === 'family') { await loadFamilyScreen(); }
+  else if (screen === 'admin') { await loadAdminScreen(); }
+  else if (screen === 'profile') { renderProfile(); }
+  else if (screen === 'create-join') {
+    document.getElementById('created-code-box').style.display = 'none';
+    document.getElementById('create-family-name').value = '';
+    document.getElementById('join-code').value = '';
+  }
+}
+
+// ═══════════════════════════════════════════
+// FAMILY SCREEN
+// ═══════════════════════════════════════════
+async function loadFamilyScreen() {
+  // Set date
+  const now = new Date();
+  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  document.getElementById('today-date').textContent = now.toLocaleDateString('ru-RU', opts);
+
+  // Load families user is member of
+  const { data: memberships } = await sb.from('family_members')
+    .select('family_id, families(id, name, admin_id)')
+    .eq('user_id', currentUser.id);
+
+  userFamilies = (memberships || []).map(m => m.families).filter(Boolean);
+
+  if (userFamilies.length === 0) {
+    document.getElementById('no-family-msg').style.display = 'flex';
+    document.getElementById('family-content').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('no-family-msg').style.display = 'none';
+  document.getElementById('family-content').style.display = 'block';
+
+  // Заполняем селектор семей
+  const selector = document.getElementById('family-selector');
+  selector.innerHTML = userFamilies.map(f => `
+    <option value="${f.id}">${f.name}</option>
+  `).join('');
+
+  // Если семья не выбрана или выбранная удалена - выбираем первую
+  if (!selectedFamilyId || !userFamilies.find(f => f.id === selectedFamilyId)) {
+    selectedFamilyId = userFamilies[0].id;
+  }
+  
+  selector.value = selectedFamilyId;
+  
+  // Обновляем заголовок
+  const selectedFamily = userFamilies.find(f => f.id === selectedFamilyId);
+  document.getElementById('family-header-title').textContent = selectedFamily?.name || 'Моя семья';
+  
+  // Добавляем слушатель на смену даты в истории
+  const datePickerEl = document.getElementById('history-date-picker');
+  if (datePickerEl && !datePickerEl.hasListener) {
+    datePickerEl.addEventListener('change', (e) => {
+      historyDate = e.target.value;
+      renderHistory();
+    });
+    datePickerEl.hasListener = true;
+  }
+  
+  await renderSchedule();
+}
+
+async function changeFamilySelection() {
+  const newFamilyId = document.getElementById('family-selector').value;
+  if (newFamilyId && newFamilyId !== selectedFamilyId) {
+    selectedFamilyId = newFamilyId;
+    const selectedFamily = userFamilies.find(f => f.id === selectedFamilyId);
+    document.getElementById('family-header-title').textContent = selectedFamily?.name || 'Моя семья';
+    
+    // Обновляем содержимое
+    if (currentFamilyTab === 'schedule') {
+      await renderSchedule();
+    } else if (currentFamilyTab === 'history') {
+      await renderHistory();
+    } else if (currentFamilyTab === 'members') {
+      await renderMembers();
+    }
+  }
+}
+
+async function refreshFamily() {
+  const btn = document.getElementById('refresh-btn');
+  btn.textContent = '⏳';
+  await loadFamilyScreen();
+  // Обновляем текущую вкладку
+  if (currentFamilyTab === 'history') {
+    await renderHistory();
+  } else if (currentFamilyTab === 'members') {
+    await renderMembers();
+  } else {
+    await renderSchedule();
+  }
+  btn.textContent = '🔄';
+  showToast('Обновлено ✅', 'success');
+}
+
+async function switchFamilyTab(tab) {
+  currentFamilyTab = tab;
+  
+  // Обновляем активность вкладок
+  document.getElementById('tab-schedule').classList.toggle('active', tab === 'schedule');
+  document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+  document.getElementById('tab-members').classList.toggle('active', tab === 'members');
+  
+  // Скрываем все контейнеры
+  document.getElementById('family-schedule').style.display = 'none';
+  document.getElementById('family-history').style.display = 'none';
+  document.getElementById('family-members').style.display = 'none';
+  
+  // Показываем выбранный
+  if (tab === 'schedule') {
+    document.getElementById('family-schedule').style.display = 'block';
+  } else if (tab === 'history') {
+    document.getElementById('family-history').style.display = 'block';
+    // Инициализируем дату если не установлена
+    if (!historyDate || historyDate === 'Invalid Date') {
+      historyDate = new Date().toISOString().split('T')[0];
+    }
+    document.getElementById('history-date-picker').value = historyDate;
+    await renderHistory();
+  } else if (tab === 'members') {
+    document.getElementById('family-members').style.display = 'block';
+    renderMembers();
+  }
+}
+
+async function renderSchedule() {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Load meds for family
+  const { data: meds } = await sb.from('medications')
+    .select('*')
+    .eq('family_id', selectedFamilyId)
+    .order('created_at');
+
+  // Load today's logs
+  const { data: logs } = await sb.from('medication_logs')
+    .select('*')
+    .eq('family_id', selectedFamilyId)
+    .eq('log_date', today);
+
+  todayMeds = meds || [];
+  todayLogs = logs || [];
+
+  const times = ['morning', 'afternoon', 'evening'];
+  const labels = { morning: 'list-morning', afternoon: 'list-afternoon', evening: 'list-evening' };
+  const sections = { morning: 'schedule-morning', afternoon: 'schedule-afternoon', evening: 'schedule-evening' };
+  const timeHours = { morning: '08:00', afternoon: '14:00', evening: '20:00' };
+
+  let totalItems = 0;
+
+  times.forEach(time => {
+    const medsForTime = todayMeds.filter(m => m.times?.includes(time));
+    const section = document.getElementById(sections[time]);
+    const list = document.getElementById(labels[time]);
+
+    if (medsForTime.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+    totalItems += medsForTime.length;
+
+    list.innerHTML = medsForTime.map(med => {
+      const log = todayLogs.find(l => l.medication_id === med.id && l.time_of_day === time);
+      const done = !!log;
+      const givenBy = log?.given_by_name || '';
+      const givenTime = log?.given_at ? new Date(log.given_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+      return `
+        <div class="med-item" id="med-item-${med.id}-${time}">
+          <div class="med-check ${done ? 'done' : 'undone'}" onclick="toggleMed('${med.id}','${time}','${med.name}')">
+            ${done ? '✓' : ''}
+          </div>
+          <div class="med-info">
+            <div class="med-name">${med.name}</div>
+            <div class="med-dose">${med.dose}</div>
+            ${done && givenBy ? `<div class="med-given-by">✅ Дал(а) ${givenBy} в ${givenTime}</div>` : ''}
+          </div>
+          <div class="time-badge time-${time}">
+            ${timeHours[time]}
+          </div>
+        </div>
+      `;
+    }).join('');
+  });
+
+  document.getElementById('no-meds-msg').style.display = totalItems === 0 ? 'flex' : 'none';
+}
+
+async function toggleMed(medId, timeOfDay, medName) {
+  const today = new Date().toISOString().split('T')[0];
+  const existing = todayLogs.find(l => l.medication_id === medId && l.time_of_day === timeOfDay);
+
+  if (existing) {
+    // Отменить отметку
+    const { error } = await sb.from('medication_logs').delete().eq('id', existing.id);
+    if (error) {
+      showToast('Ошибка отмены', 'error');
+      return;
+    }
+    todayLogs = todayLogs.filter(l => l.id !== existing.id);
+    showToast(`${medName} — отмечено как НЕ принято`);
+    await renderSchedule();
+  } else {
+    // Отметить как принятое
+    const { data, error } = await sb.from('medication_logs').insert({
+      medication_id: medId,
+      family_id: selectedFamilyId,
+      given_by: currentUser.id,
+      given_by_name: currentProfile?.name || 'Неизвестно',
+      time_of_day: timeOfDay,
+      log_date: today
+    }).select().single();
+
+    if (data) {
+      todayLogs.push(data);
+      showToast(`✅ ${medName} — принято!`, 'success');
+      // Отправить уведомление всем членам семьи
+      await notifyFamilyMembers(medName, currentProfile?.name || 'Неизвестно');
+    } else if (error?.code === '23505') {
+      showToast('Уже отмечено', 'success');
+    } else if (error) {
+      showToast('Ошибка сохранения', 'error');
+      return;
+    }
+    await renderSchedule();
+  }
+}
+
+// Отправить браузерное уведомление всем в семье
+async function notifyFamilyMembers(medName, giverName) {
+  // Запросить разрешение на уведомления если ещё не было
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+
+  if (Notification.permission === 'granted') {
+    try {
+      new Notification('💊 МедКонтроль', {
+        body: `${giverName} отдал(а) "${medName}"`,
+        icon: '💊',
+        badge: '💊',
+        tag: 'med-notification'
+      });
+    } catch (e) {
+      console.log('Notification error:', e);
+    }
+  }
+
+  // Сохранить уведомление в базу для истории
+  const { data: members } = await sb.from('family_members')
+    .select('user_id')
+    .eq('family_id', selectedFamilyId);
+
+  if (members) {
+    const notifications = members.map(m => ({
+      family_id: selectedFamilyId,
+      user_id: m.user_id,
+      message: `${giverName} отдал(а) "${medName}"`,
+      type: 'med_given',
+      is_read: m.user_id === currentUser.id
+    }));
+
+    await sb.from('notifications').insert(notifications).catch(() => {});
+  }
+}
+
+// ═══════════════════════════════════════════
+// CREATE / JOIN FAMILY
+// ═══════════════════════════════════════════
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function createFamily() {
+  const name = document.getElementById('create-family-name').value.trim();
+  if (!name) return showToast('Введите название', 'error');
+
+  const code = generateCode();
+
+  // Insert family
+  const { data: family, error } = await sb.from('families').insert({
+    name, code, admin_id: currentUser.id
+  }).select().single();
+
+  if (error) return showToast('Ошибка создания', 'error');
+
+  // Add admin as member
+  await sb.from('family_members').insert({
+    family_id: family.id,
+    user_id: currentUser.id
+  });
+
+  document.getElementById('family-code-display').textContent = code;
+  document.getElementById('created-code-box').style.display = 'block';
+  showToast('Семья создана! ✅', 'success');
+}
+
+function copyCode() {
+  const code = document.getElementById('family-code-display').textContent;
+  navigator.clipboard?.writeText(code).then(() => showToast('Код скопирован! 📋', 'success'))
+    .catch(() => showToast('Код: ' + code));
+}
+
+async function joinFamily() {
+  const code = document.getElementById('join-code').value.trim();
+  if (!code || code.length < 6) return showToast('Введите 6-значный код', 'error');
+
+  const { data: family, error } = await sb.from('families').select('*').eq('code', code).single();
+  if (error || !family) return showToast('Семья не найдена', 'error');
+
+  // Check already member
+  const { data: existing } = await sb.from('family_members')
+    .select('id').eq('family_id', family.id).eq('user_id', currentUser.id).single();
+
+  if (existing) return showToast('Вы уже в этой семье', 'error');
+
+  const { error: err2 } = await sb.from('family_members').insert({
+    family_id: family.id,
+    user_id: currentUser.id
+  });
+
+  if (err2) return showToast('Ошибка вступления', 'error');
+  showToast(`Вы вступили в семью "${family.name}"! 🎉`, 'success');
+  document.getElementById('join-code').value = '';
+  await navTo('family');
+}
+
+// ═══════════════════════════════════════════
+// ADMIN SCREEN
+// ═══════════════════════════════════════════
+async function loadAdminScreen() {
+  const { data: families } = await sb.from('families')
+    .select('*')
+    .eq('admin_id', currentUser.id)
+    .order('created_at');
+
+  adminFamilies = families || [];
+
+  if (adminFamilies.length === 0) {
+    document.getElementById('admin-no-families').style.display = 'flex';
+    document.getElementById('admin-families-section').style.display = 'none';
+    document.getElementById('admin-meds-section').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('admin-no-families').style.display = 'none';
+  document.getElementById('admin-families-section').style.display = 'block';
+
+  const list = document.getElementById('admin-family-list');
+  list.innerHTML = adminFamilies.map(f => `
+    <div class="family-card-admin ${selectedAdminFamilyId === f.id ? 'selected' : ''}"
+         onclick="selectAdminFamily('${f.id}')">
+      <h3>${f.name}</h3>
+      <div class="family-code">Код: <strong>${f.code}</strong></div>
+    </div>
+  `).join('');
+
+  if (adminFamilies.length > 0 && !selectedAdminFamilyId) {
+    selectedAdminFamilyId = adminFamilies[0].id;
+  }
+  if (selectedAdminFamilyId) selectAdminFamily(selectedAdminFamilyId);
+}
+
+async function selectAdminFamily(familyId) {
+  selectedAdminFamilyId = familyId;
+
+  // Update UI selection
+  document.querySelectorAll('.family-card-admin').forEach(c => {
+    c.classList.toggle('selected', c.onclick.toString().includes(familyId));
+  });
+
+  const family = adminFamilies.find(f => f.id === familyId);
+  document.getElementById('admin-family-name-display').textContent = '💊 ' + family.name;
+  document.getElementById('admin-meds-section').style.display = 'block';
+
+  await renderAdminMeds();
+}
+
+async function renderAdminMeds() {
+  const { data: meds } = await sb.from('medications')
+    .select('*')
+    .eq('family_id', selectedAdminFamilyId)
+    .order('created_at');
+
+  const list = document.getElementById('admin-meds-list');
+
+  if (!meds || meds.length === 0) {
+    list.innerHTML = `
+      <div class="empty" style="padding:20px 0">
+        <div class="empty-icon">💊</div>
+        <p>Нет лекарств. Добавьте первое!</p>
+      </div>`;
+    return;
+  }
+
+  const timeLabels = { morning: '🌅 Утро', afternoon: '☀️ День', evening: '🌙 Вечер' };
+
+  list.innerHTML = meds.map(med => `
+    <div class="med-edit-item">
+      <div class="med-edit-info">
+        <div class="med-edit-name">${med.name}</div>
+        <div class="med-edit-meta">${med.dose}</div>
+        <div class="med-edit-times">
+          ${(med.times || []).map(t => `<span class="time-badge time-${t}">${timeLabels[t] || t}</span>`).join('')}
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="openEditMed('${med.id}','${escapeAttr(med.name)}','${escapeAttr(med.dose)}','${(med.times||[]).join(',')}')">✏️</button>
+    </div>
+  `).join('');
+}
+
+function escapeAttr(s) {
+  return (s || '').replace(/'/g, "\\'");
+}
+
+// ═══════════════════════════════════════════
+// MED MODAL
+// ═══════════════════════════════════════════
+function openAddMed() {
+  document.getElementById('med-modal-title').textContent = 'Добавить лекарство';
+  document.getElementById('edit-med-id').value = '';
+  document.getElementById('med-name-input').value = '';
+  document.getElementById('med-dose-input').value = '';
+  document.getElementById('time-morning').checked = false;
+  document.getElementById('time-afternoon').checked = false;
+  document.getElementById('time-evening').checked = false;
+  document.getElementById('delete-med-btn').style.display = 'none';
+  document.getElementById('save-med-btn').textContent = 'Добавить';
+  openModal('add-med-modal');
+}
+
+function openEditMed(id, name, dose, timesStr) {
+  document.getElementById('med-modal-title').textContent = 'Редактировать';
+  document.getElementById('edit-med-id').value = id;
+  document.getElementById('med-name-input').value = name;
+  document.getElementById('med-dose-input').value = dose;
+  const times = timesStr ? timesStr.split(',') : [];
+  document.getElementById('time-morning').checked = times.includes('morning');
+  document.getElementById('time-afternoon').checked = times.includes('afternoon');
+  document.getElementById('time-evening').checked = times.includes('evening');
+  document.getElementById('med-enable-reminders').checked = true;
+  document.getElementById('delete-med-btn').style.display = 'flex';
+  document.getElementById('save-med-btn').textContent = 'Сохранить';
+  openModal('add-med-modal');
+}
+
+async function saveMed() {
+  const id = document.getElementById('edit-med-id').value;
+  const name = document.getElementById('med-name-input').value.trim();
+  const dose = document.getElementById('med-dose-input').value.trim();
+  const times = [];
+  if (document.getElementById('time-morning').checked) times.push('morning');
+  if (document.getElementById('time-afternoon').checked) times.push('afternoon');
+  if (document.getElementById('time-evening').checked) times.push('evening');
+
+  if (!name) return showToast('Введите название', 'error');
+  if (!dose) return showToast('Введите дозу', 'error');
+  if (times.length === 0) return showToast('Выберите время приёма', 'error');
+
+  const btn = document.getElementById('save-med-btn');
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+
+  if (id) {
+    const { error } = await sb.from('medications').update({ name, dose, times }).eq('id', id);
+    btn.innerHTML = 'Сохранить'; btn.disabled = false;
+    if (error) return showToast('Ошибка', 'error');
+    showToast('Лекарство обновлено ✅', 'success');
+  } else {
+    const { error } = await sb.from('medications').insert({
+      family_id: selectedAdminFamilyId,
+      name, dose, times
+    });
+    btn.innerHTML = 'Добавить'; btn.disabled = false;
+    if (error) return showToast('Ошибка', 'error');
+    showToast('Лекарство добавлено ✅', 'success');
+  }
+
+  closeModal();
+  await renderAdminMeds();
+}
+
+async function deleteMed() {
+  const id = document.getElementById('edit-med-id').value;
+  if (!confirm('Удалить это лекарство?')) return;
+
+  const { error } = await sb.from('medications').delete().eq('id', id);
+  if (error) return showToast('Ошибка', 'error');
+  showToast('Лекарство удалено', 'success');
+  closeModal();
+  await renderAdminMeds();
+}
+
+// ═══════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════
+function openModal(id) {
+  const overlay = document.getElementById(id);
+  overlay.classList.add('open');
+  overlay.addEventListener('click', function handler(e) {
+    if (e.target === overlay) { closeModal(); overlay.removeEventListener('click', handler); }
+  });
+}
+function closeModal() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+// ═══════════════════════════════════════════
+// MEMBERS AND HISTORY RENDERING
+// ═══════════════════════════════════════════
+async function renderMembers() {
+  if (!selectedFamilyId) return;
+  
+  const { data: members } = await sb.from('family_members')
+    .select('user_id, profiles(id, name)')
+    .eq('family_id', selectedFamilyId);
+
+  const family = userFamilies.find(f => f.id === selectedFamilyId);
+  const adminId = family?.admin_id;
+  const isCurrentUserAdmin = adminId === currentUser.id;
+
+  const list = document.getElementById('members-list');
+  
+  if (!members || members.length === 0) {
+    list.innerHTML = '<p style="text-align:center; color: var(--text2);">Нет участников</p>';
+    return;
+  }
+  
+  list.innerHTML = members.map(m => {
+    const profile = m.profiles;
+    const isAdmin = profile?.id === adminId;
+    const isCurrentMember = profile?.id === currentUser.id;
+    const letter = (profile?.name || '?')[0]?.toUpperCase();
+    
+    return `
+      <div class="member-item">
+        <div class="member-avatar">${letter}</div>
+        <div class="member-name">${profile?.name || 'Без имени'}</div>
+        ${isAdmin ? '<span class="member-badge">👑 Админ</span>' : ''}
+        ${isCurrentUserAdmin && !isCurrentMember && !isAdmin ? `
+          <button class="btn btn-danger btn-sm" onclick="removeFamilyMember('${profile?.id}', '${profile?.name}')">
+            ❌ Выгнать
+          </button>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+async function renderHistory() {
+  if (!selectedFamilyId) return;
+  
+  const { data: logs } = await sb.from('medication_logs')
+    .select('*')
+    .eq('family_id', selectedFamilyId)
+    .eq('log_date', historyDate)
+    .order('given_at');
+
+  const { data: meds } = await sb.from('medications')
+    .select('*')
+    .eq('family_id', selectedFamilyId);
+
+  const medMap = {};
+  (meds || []).forEach(m => medMap[m.id] = m);
+
+  const content = document.getElementById('history-content');
+
+  if (!logs || logs.length === 0) {
+    content.innerHTML = `
+      <div class="empty" style="padding:40px 20px">
+        <div class="empty-icon">📋</div>
+        <p>На эту дату нет записей о приёме лекарств</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Count stats
+  const totalGiven = logs.length;
+  const uniqueMeds = new Set();
+  logs.forEach(l => uniqueMeds.add(l.medication_id));
+
+  let html = `
+    <div class="history-summary">
+      <div class="summary-stat">${totalGiven}/${uniqueMeds.size}</div>
+      <div class="summary-label">Лекарств отдано</div>
+    </div>
+  `;
+
+  const timeLabels = { morning: '🌅 Утро', afternoon: '☀️ День', evening: '🌙 Вечер' };
+  const groupedByTime = { morning: [], afternoon: [], evening: [] };
+
+  logs.forEach(log => {
+    if (groupedByTime[log.time_of_day]) {
+      groupedByTime[log.time_of_day].push(log);
+    }
+  });
+
+  Object.entries(groupedByTime).forEach(([time, timeLogs]) => {
+    if (timeLogs.length === 0) return;
+
+    html += `<div class="history-day-section">
+      <div class="history-day-header">${timeLabels[time] || time}</div>`;
+
+    timeLogs.forEach(log => {
+      const med = medMap[log.medication_id];
+      const givenTime = log.given_at 
+        ? new Date(log.given_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+        : '??:??';
+      
+      html += `
+        <div class="history-item">
+          <div class="history-check">✓</div>
+          <div class="history-info">
+            <div class="history-med-name">${med?.name || 'Неизвестное лекарство'}</div>
+            <div class="history-meta">${med?.dose || ''}</div>
+            <div class="history-time">🕐 ${givenTime}</div>
+            <div class="history-given-by">Дал(а): ${log.given_by_name || 'неизвестно'}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+  });
+
+  content.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════
+// LEAVE / REMOVE FAMILY MEMBERS
+// ═══════════════════════════════════════════
+async function leaveFamily() {
+  if (!selectedFamilyId) return;
+  
+  const family = userFamilies.find(f => f.id === selectedFamilyId);
+  const isAdmin = family?.admin_id === currentUser.id;
+  
+  if (isAdmin) {
+    showToast('⚠️ Админ не может выйти из семьи', 'error');
+    return;
+  }
+  
+  if (!confirm('Вы точно хотите выйти из этой семьи?')) return;
+  
+  const { error } = await sb.from('family_members')
+    .delete()
+    .eq('family_id', selectedFamilyId)
+    .eq('user_id', currentUser.id);
+  
+  if (error) {
+    showToast('Ошибка выхода', 'error');
+    return;
+  }
+  
+  showToast('Вы вышли из семьи 👋', 'success');
+  await loadFamilyScreen();
+}
+
+async function removeFamilyMember(memberId, memberName) {
+  if (!selectedFamilyId) return;
+  
+  const family = userFamilies.find(f => f.id === selectedFamilyId);
+  const isAdmin = family?.admin_id === currentUser.id;
+  
+  if (!isAdmin) {
+    showToast('Только администратор может удалять участников', 'error');
+    return;
+  }
+  
+  if (memberId === currentUser.id) {
+    showToast('Вы не можете исключить сами себя', 'error');
+    return;
+  }
+  
+  if (!confirm(`Выгнать ${memberName} из семьи?`)) return;
+  
+  const { error } = await sb.from('family_members')
+    .delete()
+    .eq('family_id', selectedFamilyId)
+    .eq('user_id', memberId);
+  
+  if (error) {
+    showToast('Ошибка удаления', 'error');
+    return;
+  }
+  
+  showToast(`${memberName} выгнан(а) из семьи ✅`, 'success');
+  await renderMembers();
+}
+
+// ═══════════════════════════════════════════
+// INIT — единственная точка входа
+// ═══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  const loader = document.getElementById('loader');
+  try {
+    const { data: { session }, error } = await sb.auth.getSession();
+    if (error) throw error;
+    if (session) {
+      currentUser = session.user;
+      await loadProfile();
+      showMainApp();
+      // Запустить проверку напоминаний
+      startReminderCheck();
+    } else {
+      showAuth();
+    }
+  } catch (err) {
+    console.error("Ошибка инициализации:", err);
+    showAuth();
+  } finally {
+    appInitialized = true;
+    if (loader) {
+      loader.style.opacity = '0';
+      setTimeout(() => loader.style.display = 'none', 400);
+    }
+  }
+});
+
+// ═══════════════════════════════════════════
+// REMINDERS
+// ═══════════════════════════════════════════
+const reminderTimes = {
+  morning: 8,    // 08:00
+  afternoon: 14, // 14:00
+  evening: 20    // 20:00
+};
+
+function startReminderCheck() {
+  // Запросить разрешение на уведомления
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  // Проверять напоминания каждые 60 секунд
+  setInterval(checkAndSendReminders, 60000);
+  // Первая проверка сразу
+  checkAndSendReminders();
+}
+
+async function checkAndSendReminders() {
+  if (!currentUser || !selectedFamilyId) return;
+
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const today = now.toISOString().split('T')[0];
+
+  // Проверить каждое время (в минуты до напоминания)
+  for (const [timeKey, hour] of Object.entries(reminderTimes)) {
+    // Отправить напоминание за 15 минут до времени
+    const reminderHour = hour;
+    const reminderMinutes = 0;
+
+    if (hours === reminderHour && minutes >= reminderMinutes && minutes < (reminderMinutes + 1)) {
+      // Получить лекарства на это время
+      const { data: meds } = await sb.from('medications')
+        .select('*')
+        .eq('family_id', selectedFamilyId)
+        .or(`times.contains.["${timeKey}"]`);
+
+      if (!meds) return;
+
+      // Получить уже отданные лекарства на сегодня для этого времени
+      const { data: logs } = await sb.from('medication_logs')
+        .select('medication_id')
+        .eq('family_id', selectedFamilyId)
+        .eq('log_date', today)
+        .eq('time_of_day', timeKey);
+
+      const givenMedIds = new Set((logs || []).map(l => l.medication_id));
+      const pendingMeds = meds.filter(m => m.times?.includes(timeKey) && !givenMedIds.has(m.id));
+
+      if (pendingMeds.length > 0) {
+        const timeLabel = {
+          morning: '🌅 Утро (08:00)',
+          afternoon: '☀️ День (14:00)',
+          evening: '🌙 Вечер (20:00)'
+        }[timeKey];
+
+        const medNames = pendingMeds.map(m => m.name).join(', ');
+
+        if (Notification.permission === 'granted') {
+          try {
+            new Notification('💊 МедКонтроль — Напоминание', {
+              body: `${timeLabel}\nНужно отдать: ${medNames}`,
+              icon: '💊',
+              badge: '💊',
+              tag: `reminder-${timeKey}`,
+              requireInteraction: true
+            });
+          } catch (e) {
+            console.log('Notification error:', e);
+          }
+        }
+      }
+    }
+  }
+}
+</script>
+
+<!-- PWA Registration -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    console.log('✅ Service Worker зарегистрирован');
+  }).catch(err => {
+    console.log('Service Worker ошибка:', err);
+  });
+}
+
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  installPrompt = e;
+  console.log('✅ Приложение можно установить');
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('✅ Приложение установлено!');
+  installPrompt = null;
+});
+</script>
+
+</body>
+</html>
