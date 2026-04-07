@@ -1821,6 +1821,10 @@ window.addEventListener('DOMContentLoaded', async () => {
       showMainApp();
       // Запустить проверку напоминаний
       startReminderCheck();
+      // Подписаться на real-time уведомления
+      subscribeToMedicationChanges();
+      // Зарегистрировать Service Worker и запросить push
+      registerServiceWorkerAndSubscribeToPush();
     } else {
       showAuth();
     }
@@ -1913,6 +1917,96 @@ async function checkAndSendReminders() {
         }
       }
     }
+  }
+}
+
+// ═══════════════════════════════════════════
+// REAL-TIME SUBSCRIPTIONS
+// ═══════════════════════════════════════════
+function subscribeToMedicationChanges() {
+  if (!currentUser) return;
+
+  // Подписаться на изменения в medication_logs
+  sb.channel(`user:${currentUser.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'medication_logs'
+      },
+      (payload) => {
+        handleNewMedicationLog(payload.new);
+      }
+    )
+    .subscribe();
+
+  console.log('✅ Подписаны на real-time уведомления');
+}
+
+function handleNewMedicationLog(log) {
+  // Если это не наша семья - игнорируем
+  if (log.family_id !== selectedFamilyId) return;
+
+  // Если это мы сами отметили - не показываем уведомление
+  if (log.given_by === currentUser.id) return;
+
+  // Показать уведомление от другого пользователя
+  const medName = 'Лекарство'; // Получим из БД
+  const giverName = log.given_by_name || 'Кто-то';
+  const timeLabel = {
+    morning: '🌅 Утро',
+    afternoon: '☀️ День',
+    evening: '🌙 Вечер'
+  }[log.time_of_day] || 'Неизвестное время';
+
+  // Показать браузерное уведомление
+  if (Notification.permission === 'granted') {
+    try {
+      new Notification('💊 МедКонтроль', {
+        body: `${giverName} отдал(а) лекарство\n${timeLabel}`,
+        icon: '💊',
+        badge: '💊',
+        tag: 'med-notification',
+        requireInteraction: false
+      });
+    } catch (e) {
+      console.log('Notification error:', e);
+    }
+  }
+
+  // Обновить расписание если открыта вкладка "Сегодня"
+  if (currentFamilyTab === 'schedule') {
+    renderSchedule();
+  }
+  // Обновить историю если открыта вкладка "История"
+  if (currentFamilyTab === 'history') {
+    renderHistory();
+  }
+}
+
+// ═══════════════════════════════════════════
+// SERVICE WORKER & PUSH
+// ═══════════════════════════════════════════
+async function registerServiceWorkerAndSubscribeToPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.log('Push notifications not supported');
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register('sw.js');
+    console.log('✅ Service Worker зарегистрирован');
+
+    // Попросить разрешение на push
+    if (Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        console.log('✅ Push уведомления включены');
+      }
+    }
+  } catch (error) {
+    console.error('Service Worker registration failed:', error);
   }
 }
 </script>

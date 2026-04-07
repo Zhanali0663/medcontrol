@@ -1,6 +1,6 @@
 const CACHE_NAME = 'medcontrol-v1';
 const URLS_TO_CACHE = [
-  'index(2).html',
+  'index.html',
   'manifest.json',
 ];
 
@@ -30,33 +30,75 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch: кэш первым, потом сеть
+// Fetch: сеть первой, потом кэш
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request).then(response => {
+    fetch(event.request)
+      .then(response => {
         if (response.ok) {
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, response.clone());
           });
         }
         return response;
-      }).catch(() => {
-        return new Response('Нет интернета', { status: 503 });
-      });
+      })
+      .catch(() => {
+        return caches.match(event.request).then(response => {
+          return response || new Response('Нет интернета', { status: 503 });
+        });
+      })
+  );
+});
+
+// Обработка push-уведомлений
+self.addEventListener('push', event => {
+  if (!event.data) return;
+  
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body || 'Новое уведомление',
+      icon: '💊',
+      badge: '💊',
+      tag: data.tag || 'med-notification',
+      requireInteraction: true,
+      actions: [
+        { action: 'open', title: '👁️ Открыть' },
+        { action: 'close', title: '✕ Закрыть' }
+      ]
+    };
+    
+    event.waitUntil(
+      self.registration.showNotification(data.title || '💊 МедКонтроль', options)
+    );
+  } catch (e) {
+    console.error('Push notification error:', e);
+  }
+});
+
+// Клик на уведомление
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(clientList => {
+      // Если окно уже открыто - сфокусируем его
+      for (let i = 0; i < clientList.length; i++) {
+        if (clientList[i].url === '/' && 'focus' in clientList[i]) {
+          return clientList[i].focus();
+        }
+      }
+      // Если нет - откроем новое
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
     })
   );
 });
 
-// Фоновая синхронизация
-self.addEventListener('sync', event => {
-  if (event.tag === 'sync-logs') {
-    event.waitUntil(syncLogs());
-  }
+// Закрытие уведомления
+self.addEventListener('notificationclose', event => {
+  console.log('Notification closed');
 });
-
-async function syncLogs() {
-  console.log('Синхронизация лекарств...');
-}

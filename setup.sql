@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS public.medications (
   name text NOT NULL,
   dose text NOT NULL,
   times text[] NOT NULL DEFAULT '{}',
+  frequency integer DEFAULT 1,
+  start_date date,
   created_at timestamptz DEFAULT now()
 );
 
