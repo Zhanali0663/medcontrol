@@ -2159,7 +2159,7 @@ function handleDeletedMedicationLog(log) {
   }
 }
 
-function handleNewMedicationLog(log) {
+async function handleNewMedicationLog(log) {
   console.log('🔔 Обработка новой записи:', log);
   console.log('Текущий пользователь ID:', currentUser.id);
   console.log('Кто добавил:', log.given_by);
@@ -2187,18 +2187,32 @@ function handleNewMedicationLog(log) {
 
   const giverName = log.given_by_name || 'Кто-то';
   const timeLabel = {
-    morning: '🌅 Утро',
-    afternoon: '☀️ День',
-    evening: '🌙 Вечер'
-  }[log.time_of_day] || 'Неизвестное время';
+    morning: '🌅 Утро (08:00)',
+    afternoon: '☀️ День (14:00)',
+    evening: '🌙 Вечер (20:00)'
+  }[log.time_of_day] || log.time_of_day;
 
-  console.log(`👁️ УВЕДОМЛЕНИЕ: ${giverName} отдал(а) лекарство (${timeLabel})`);
+  // Подтягиваем название лекарства из БД
+  let medName = 'лекарство';
+  try {
+    const { data: medData } = await sb.from('medications')
+      .select('name, dose')
+      .eq('id', log.medication_id)
+      .single();
+    if (medData) {
+      medName = medData.name + (medData.dose ? ` (${medData.dose})` : '');
+    }
+  } catch (e) {
+    console.log('⚠️ Не удалось получить название лекарства:', e);
+  }
+
+  console.log(`👁️ УВЕДОМЛЕНИЕ: ${giverName} отдал(а) "${medName}" — ${timeLabel}`);
 
   // Показать браузерное уведомление ОТ ДРУГОГО пользователя
   if (Notification.permission === 'granted') {
     try {
       const notif = new Notification('💊 МедКонтроль', {
-        body: `${giverName} отдал(а) лекарство\n${timeLabel}`,
+        body: `${giverName} отдал(а) ${medName}\n${timeLabel}`,
         icon: '💊',
         badge: '💊',
         tag: 'med-notification-' + log.medication_id + '-' + log.time_of_day,
@@ -2213,8 +2227,21 @@ function handleNewMedicationLog(log) {
     } catch (e) {
       console.error('❌ Ошибка уведомления:', e);
     }
+  } else if (Notification.permission === 'default') {
+    // Разрешение ещё не запрошено — запрашиваем и повторяем
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      try {
+        new Notification('💊 МедКонтроль', {
+          body: `${giverName} отдал(а) ${medName}\n${timeLabel}`,
+          icon: '💊',
+          tag: 'med-notification-' + log.medication_id + '-' + log.time_of_day,
+          requireInteraction: true
+        });
+      } catch (e) {}
+    }
   } else {
-    console.log('⚠️ Разрешение на уведомления не дано');
+    console.log('⚠️ Разрешение на уведомления не дано (denied)');
   }
 
   // Обновить UI если эта семья выбрана
@@ -2228,6 +2255,20 @@ function handleNewMedicationLog(log) {
         checkBtn.classList.add('done');
         checkBtn.classList.remove('undone');
         checkBtn.textContent = '✓';
+        // Обновляем строчку "Дал(а)" под названием лекарства
+        const medInfo = medElement.querySelector('.med-info');
+        if (medInfo) {
+          let givenByEl = medInfo.querySelector('.med-given-by');
+          if (!givenByEl) {
+            givenByEl = document.createElement('div');
+            givenByEl.className = 'med-given-by';
+            medInfo.appendChild(givenByEl);
+          }
+          const givenTime = log.given_at
+            ? new Date(log.given_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+            : new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+          givenByEl.textContent = `✅ Дал(а) ${giverName} в ${givenTime}`;
+        }
         console.log('✅ Кнопка обновлена на зелёную');
       }
     } else if (currentFamilyTab === 'history') {
