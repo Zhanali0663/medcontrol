@@ -895,6 +895,11 @@
         </div>
       </div>
       <div class="input-group">
+        <label>Частота приёма (в днях)</label>
+        <input type="number" id="med-frequency" placeholder="1" min="1" value="1" style="font-size:15px;">
+        <small style="color: var(--text2); margin-top: 4px;">1 = каждый день, 2 = раз в 2 дня, 3 = раз в 3 дня и т.д.</small>
+      </div>
+      <div class="input-group">
         <label>Включить напоминания</label>
         <label class="time-check-label">
           <input type="checkbox" id="med-enable-reminders"> 🔔 Отправлять уведомления перед приёмом
@@ -1223,7 +1228,19 @@ async function renderSchedule() {
     .eq('family_id', selectedFamilyId)
     .eq('log_date', today);
 
-  todayMeds = meds || [];
+  todayMeds = (meds || []).filter(med => {
+    // Проверяем нужно ли показывать лекарство сегодня
+    if (!med.start_date) return true; // Если нет даты начала, показываем
+    
+    const startDate = new Date(med.start_date);
+    const todayDate = new Date(today);
+    const daysElapsed = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24));
+    const frequency = med.frequency || 1;
+    
+    // Если дней прошло кратно частоте - показываем
+    return daysElapsed >= 0 && daysElapsed % frequency === 0;
+  });
+  
   todayLogs = logs || [];
 
   const times = ['morning', 'afternoon', 'evening'];
@@ -1259,6 +1276,7 @@ async function renderSchedule() {
           <div class="med-info">
             <div class="med-name">${med.name}</div>
             <div class="med-dose">${med.dose}</div>
+            ${med.frequency && med.frequency > 1 ? `<div style="font-size: 11px; color: var(--text2); margin-top: 2px;">📅 Раз в ${med.frequency} дн.</div>` : ''}
             ${done && givenBy ? `<div class="med-given-by">✅ Дал(а) ${givenBy} в ${givenTime}</div>` : ''}
           </div>
           <div class="time-badge time-${time}">
@@ -1534,6 +1552,7 @@ async function saveMed() {
   const id = document.getElementById('edit-med-id').value;
   const name = document.getElementById('med-name-input').value.trim();
   const dose = document.getElementById('med-dose-input').value.trim();
+  const frequency = parseInt(document.getElementById('med-frequency').value) || 1;
   const times = [];
   if (document.getElementById('time-morning').checked) times.push('morning');
   if (document.getElementById('time-afternoon').checked) times.push('afternoon');
@@ -1547,14 +1566,15 @@ async function saveMed() {
   btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
 
   if (id) {
-    const { error } = await sb.from('medications').update({ name, dose, times }).eq('id', id);
+    const { error } = await sb.from('medications').update({ name, dose, times, frequency }).eq('id', id);
     btn.innerHTML = 'Сохранить'; btn.disabled = false;
     if (error) return showToast('Ошибка', 'error');
     showToast('Лекарство обновлено ✅', 'success');
   } else {
     const { error } = await sb.from('medications').insert({
       family_id: selectedAdminFamilyId,
-      name, dose, times
+      name, dose, times, frequency,
+      start_date: new Date().toISOString().split('T')[0]
     });
     btn.innerHTML = 'Добавить'; btn.disabled = false;
     if (error) return showToast('Ошибка', 'error');
