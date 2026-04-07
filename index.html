@@ -1364,8 +1364,8 @@ async function toggleMed(medId, timeOfDay, medName) {
     if (data) {
       todayLogs.push(data);
       showToast(`✅ ${medName} — принято!`, 'success');
-      // Отправить уведомление всем членам семьи
-      await notifyFamilyMembers(medName, currentProfile?.name || 'Неизвестно');
+      // Отправить уведомление всем членам семьи, кроме себя
+      await notifyFamilyMembers(medName, currentProfile?.name || 'Неизвестно', false);
     } else if (error?.code === '23505') {
       showToast('Уже отмечено', 'success');
       // Оставляем зелёным
@@ -1385,7 +1385,7 @@ async function toggleMed(medId, timeOfDay, medName) {
 }
 
 // Отправить браузерное уведомление всем в семье
-async function notifyFamilyMembers(medName, giverName) {
+async function notifyFamilyMembers(medName, giverName, skipSelf = true) {
   console.log('%c📬 ОТПРАВКА УВЕДОМЛЕНИЯ В СЕМЬЮ', 'font-size: 13px; font-weight: bold; color: green;');
   console.log('Лекарство:', medName);
   console.log('Кто дал:', giverName);
@@ -1399,8 +1399,8 @@ async function notifyFamilyMembers(medName, giverName) {
     });
   }
 
-  // Если разрешено - отправляем
-  if (Notification.permission === 'granted') {
+  // Не показывать уведомление самому себе
+  if (!skipSelf && Notification.permission === 'granted') {
     try {
       const notif = new Notification('💊 МедКонтроль', {
         body: `${giverName} отдал(а) "${medName}"`,
@@ -1410,17 +1410,15 @@ async function notifyFamilyMembers(medName, giverName) {
         requireInteraction: true,
         vibrate: [200, 100, 200]
       });
-      
       notif.onclick = () => {
         window.focus();
         notif.close();
       };
-      
       console.log('✅ Уведомление УСПЕШНО отправлено!');
     } catch (err) {
       console.error('❌ Ошибка создания уведомления:', err);
     }
-  } else if (Notification.permission === 'denied') {
+  } else if (!skipSelf && Notification.permission === 'denied') {
     console.warn('⛔ Разрешение ОТКЛОНЕНО пользователем');
     showToast('Разрешите уведомления в настройках браузера', 'error');
   }
@@ -1438,7 +1436,6 @@ async function notifyFamilyMembers(medName, giverName) {
       type: 'med_given',
       is_read: m.user_id === currentUser.id
     }));
-
     await sb.from('notifications').insert(notifications).catch(err => {
       console.log('⚠️ Ошибка сохранения в базу:', err);
     });
