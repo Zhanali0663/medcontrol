@@ -3,22 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>МедКонтроль</title>
-  <script>
-    // Простой редирект на index.html для всех 404
-    var segment = window.location.pathname.split('/').pop();
-    
-    // Если это не файл - перенаправляем на index.html
-    if (!segment.includes('.') && segment !== '') {
-      var path = window.location.pathname.split('/');
-      var baseUrl = '/' + path[1] + '/'; // Получить /repo-name/
-      window.location.replace(baseUrl + 'index.html' + window.location.hash);
-    } else {
-      // Если файл - перенаправляем как есть
-      window.location.replace(window.location.pathname.replace('/404.html', '') + window.location.search + window.location.hash);
-    }
-  </script>
 </head>
 <body>
-  Перенаправление...
+  404 Not Found
 </body>
 </html>
