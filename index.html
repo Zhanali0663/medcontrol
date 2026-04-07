@@ -1674,75 +1674,98 @@ async function renderMembers() {
 async function renderHistory() {
   if (!selectedFamilyId) return;
   
+  // Получить все лекарства для семьи на эту дату
+  const { data: meds } = await sb.from('medications')
+    .select('*')
+    .eq('family_id', selectedFamilyId)
+    .order('created_at');
+
+  // Получить все выданные лекарства за эту дату
   const { data: logs } = await sb.from('medication_logs')
     .select('*')
     .eq('family_id', selectedFamilyId)
     .eq('log_date', historyDate)
     .order('given_at');
 
-  const { data: meds } = await sb.from('medications')
-    .select('*')
-    .eq('family_id', selectedFamilyId);
-
   const medMap = {};
   (meds || []).forEach(m => medMap[m.id] = m);
 
   const content = document.getElementById('history-content');
 
-  if (!logs || logs.length === 0) {
+  // Фильтруем лекарства которые должны быть на эту дату
+  const filteredMeds = (meds || []).filter(med => {
+    if (!med.start_date) return true;
+    const startDate = new Date(med.start_date);
+    const selectedDate = new Date(historyDate);
+    const daysElapsed = Math.floor((selectedDate - startDate) / (1000 * 60 * 60 * 24));
+    const frequency = med.frequency || 1;
+    return daysElapsed >= 0 && daysElapsed % frequency === 0;
+  });
+
+  if (!filteredMeds || filteredMeds.length === 0) {
     content.innerHTML = `
       <div class="empty" style="padding:40px 20px">
         <div class="empty-icon">📋</div>
-        <p>На эту дату нет записей о приёме лекарств</p>
+        <p>На эту дату нет лекарств для приёма</p>
       </div>
     `;
     return;
   }
 
-  // Count stats
-  const totalGiven = logs.length;
-  const uniqueMeds = new Set();
-  logs.forEach(l => uniqueMeds.add(l.medication_id));
+  // Count stats - сколько выдано из всех
+  const givenCount = (logs || []).length;
+  const totalCount = filteredMeds.length;
 
   let html = `
     <div class="history-summary">
-      <div class="summary-stat">${totalGiven}/${uniqueMeds.size}</div>
+      <div class="summary-stat">${givenCount}/${totalCount}</div>
       <div class="summary-label">Лекарств отдано</div>
     </div>
   `;
 
   const timeLabels = { morning: '🌅 Утро', afternoon: '☀️ День', evening: '🌙 Вечер' };
-  const groupedByTime = { morning: [], afternoon: [], evening: [] };
+  const times = ['morning', 'afternoon', 'evening'];
 
-  logs.forEach(log => {
-    if (groupedByTime[log.time_of_day]) {
-      groupedByTime[log.time_of_day].push(log);
-    }
-  });
-
-  Object.entries(groupedByTime).forEach(([time, timeLogs]) => {
-    if (timeLogs.length === 0) return;
+  times.forEach(time => {
+    const medsForTime = filteredMeds.filter(m => m.times?.includes(time));
+    if (medsForTime.length === 0) return;
 
     html += `<div class="history-day-section">
-      <div class="history-day-header">${timeLabels[time] || time}</div>`;
+      <div class="history-day-header">${timeLabels[time]}</div>`;
 
-    timeLogs.forEach(log => {
-      const med = medMap[log.medication_id];
-      const givenTime = log.given_at 
-        ? new Date(log.given_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-        : '??:??';
+    medsForTime.forEach(med => {
+      const log = (logs || []).find(l => l.medication_id === med.id && l.time_of_day === time);
       
-      html += `
-        <div class="history-item">
-          <div class="history-check">✓</div>
-          <div class="history-info">
-            <div class="history-med-name">${med?.name || 'Неизвестное лекарство'}</div>
-            <div class="history-meta">${med?.dose || ''}</div>
-            <div class="history-time">🕐 ${givenTime}</div>
-            <div class="history-given-by">Дал(а): ${log.given_by_name || 'неизвестно'}</div>
+      if (log) {
+        // Выданное лекарство
+        const givenTime = log.given_at 
+          ? new Date(log.given_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+          : '??:??';
+        
+        html += `
+          <div class="history-item">
+            <div class="history-check">✓</div>
+            <div class="history-info">
+              <div class="history-med-name">${med.name}</div>
+              <div class="history-meta">${med.dose}</div>
+              <div class="history-time">🕐 ${givenTime}</div>
+              <div class="history-given-by">Дал(а): ${log.given_by_name || 'неизвестно'}</div>
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        // НЕ выданное лекарство
+        html += `
+          <div class="history-item" style="opacity: 0.6;">
+            <div class="history-check" style="background: #e5e7eb; color: #6b7280;">✗</div>
+            <div class="history-info">
+              <div class="history-med-name">${med.name}</div>
+              <div class="history-meta">${med.dose}</div>
+              <div class="history-time" style="color: #ef4444;">❌ Не выдано</div>
+            </div>
+          </div>
+        `;
+      }
     });
 
     html += '</div>';
