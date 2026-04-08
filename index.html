@@ -1950,6 +1950,21 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ═══════════════════════════════════════════
+// VISIBILITY CHANGE — восстановление при возврате из фона
+// ═══════════════════════════════════════════
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    console.log('👁️ Приложение свёрнуто');
+  } else {
+    console.log('👁️ Приложение развёрнуто - восстанавливаю обработчики');
+    // Переподписаться на real-time
+    if (currentUser && selectedFamilyId) {
+      subscribeToMedicationChanges();
+    }
+  }
+});
+
+// ═══════════════════════════════════════════
 // NOTIFICATION SETUP
 // ═══════════════════════════════════════════
 function setupNotifications() {
