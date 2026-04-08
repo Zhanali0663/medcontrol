@@ -1269,7 +1269,7 @@ async function renderSchedule() {
   const times = ['morning', 'afternoon', 'evening'];
   const labels = { morning: 'list-morning', afternoon: 'list-afternoon', evening: 'list-evening' };
   const sections = { morning: 'schedule-morning', afternoon: 'schedule-afternoon', evening: 'schedule-evening' };
-  const timeHours = { morning: '08:00', afternoon: '14:00', evening: '20:00' };
+  const timeHours = { morning: '06:00', afternoon: '14:00', evening: '20:00' };
 
   let totalItems = 0;
 
@@ -2017,7 +2017,7 @@ function registerServiceWorkerAndSubscribeToPush() {
 // REMINDERS
 // ═══════════════════════════════════════════
 const reminderTimes = {
-  morning: 8,    // 08:00
+  morning: 6,    // 06:00 (было 08:00)
   afternoon: 14, // 14:00
   evening: 20    // 20:00
 };
