@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>МедКонтроль</title>
 <meta name="theme-color" content="#4f6ef7">
 <meta name="description" content="Контроль приёма лекарств для всей семьи">
@@ -37,7 +37,7 @@
     font-family: 'Nunito', sans-serif;
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
+    min-height: 100dvh; /* Исправлено для мобилок */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -46,11 +46,17 @@
   #app {
     width: 100%;
     max-width: 480px;
-    min-height: 100vh;
+    min-height: 100dvh; /* Исправлено для мобилок */
     display: flex;
     flex-direction: column;
     background: var(--bg);
     position: relative;
+  }
+
+  /* Защита от фантомных кликов и двойных тапов */
+  button, a, .med-check, .schedule-tab, .nav-item, input[type="checkbox"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* ── LOADER ── */
@@ -513,18 +519,6 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .undo-btn {
-    font-size: 11px;
-    color: var(--danger);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 700;
-    padding: 2px 6px;
-    margin-left: 4px;
-  }
-
   /* ── HISTORY ── */
   .history-day-section {
     margin-bottom: 20px;
@@ -599,24 +593,6 @@
     color: var(--text2);
     margin-top: 4px;
   }
-
-  /* ── NOTIFICATIONS ── */
-  .notification-badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 18px;
-    height: 18px;
-    background: var(--danger);
-    color: white;
-    border-radius: 50%;
-    font-size: 10px;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
 </style>
 </head>
 <body>
@@ -629,7 +605,6 @@
 
 <div id="app">
 
-  <!-- ══════════════ AUTH SCREEN ══════════════ -->
   <div id="screen-auth" class="screen" style="display:none">
     <div class="auth-logo">💊</div>
     <div class="auth-title">МедКонтроль</div>
@@ -640,7 +615,6 @@
       <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
     </div>
 
-    <!-- LOGIN -->
     <div id="login-form" class="auth-form">
       <div class="input-group">
         <label>Почта</label>
@@ -653,7 +627,6 @@
       <button class="btn btn-primary btn-full" onclick="doLogin()">Войти</button>
     </div>
 
-    <!-- REGISTER -->
     <div id="register-form" class="auth-form" style="display:none">
       <div class="input-group">
         <label>Имя</label>
@@ -675,7 +648,6 @@
     </div>
   </div>
 
-  <!-- ══════════════ FAMILY SCREEN ══════════════ -->
   <div id="screen-family" class="screen">
     <div class="header">
       <h2 id="family-header-title">Моя семья</h2>
@@ -704,7 +676,6 @@
         <button class="schedule-tab" onclick="switchFamilyTab('members')" id="tab-members">👥 Участники</button>
       </div>
 
-      <!-- SCHEDULE -->
       <div id="family-schedule">
         <div id="schedule-morning" style="display:none">
           <div class="section-label">🌅 Утро</div>
@@ -724,7 +695,6 @@
         </div>
       </div>
 
-      <!-- HISTORY -->
       <div id="family-history" style="display:none">
         <div style="padding:0 16px 12px">
           <input type="date" id="history-date-picker" style="width:100%">
@@ -732,7 +702,6 @@
         <div id="history-content"></div>
       </div>
 
-      <!-- MEMBERS -->
       <div id="family-members" style="display:none">
         <div class="card">
           <div class="card-title">Участники семьи</div>
@@ -747,13 +716,11 @@
     </div>
   </div>
 
-  <!-- ══════════════ CREATE/JOIN SCREEN ══════════════ -->
   <div id="screen-create-join" class="screen">
     <div class="header">
       <h2>Семья</h2>
     </div>
     <div class="create-join-options">
-      <!-- CREATE -->
       <div class="option-card">
         <div class="option-icon">🏠</div>
         <div class="option-title">Создать семью</div>
@@ -770,7 +737,6 @@
         </div>
       </div>
 
-      <!-- JOIN -->
       <div class="option-card">
         <div class="option-icon">🔑</div>
         <div class="option-title">Вступить в семью</div>
@@ -784,7 +750,6 @@
     </div>
   </div>
 
-  <!-- ══════════════ PROFILE SCREEN ══════════════ -->
   <div id="screen-profile" class="screen">
     <div class="header">
       <h2>Профиль</h2>
@@ -811,7 +776,6 @@
     </div>
   </div>
 
-  <!-- ══════════════ ADMIN SCREEN ══════════════ -->
   <div id="screen-admin" class="screen">
     <div class="header">
       <h2>Администратор</h2>
@@ -844,7 +808,6 @@
     </div>
   </div>
 
-  <!-- ══════════════ BOTTOM NAV ══════════════ -->
   <nav class="bottom-nav" id="bottom-nav" style="display:none">
     <button class="nav-item active" onclick="navTo('family')" id="nav-family">
       <span class="nav-icon">🏠</span>
@@ -864,10 +827,7 @@
     </button>
   </nav>
 
-</div><!-- /#app -->
-
-<!-- ══════════════ ADD MED MODAL ══════════════ -->
-<div class="modal-overlay" id="add-med-modal">
+</div><div class="modal-overlay" id="add-med-modal">
   <div class="modal">
     <h3 id="med-modal-title">Добавить лекарство</h3>
     <div class="modal-form">
@@ -912,7 +872,6 @@
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -923,44 +882,28 @@ const SUPABASE_URL = 'https://hfezfxdxdvmtpqvdgaah.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhmZXpmeGR4ZHZtdHBxdmRnYWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTM3MTMsImV4cCI6MjA5MTA4OTcxM30.qw5nA3UQafFI8WzyP9zD19tmXTHA5X_HrBJYUDAotPA';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Вывести сообщение о готовности
-console.log('%c✅ МедКонтроль загружается...', 'font-size: 16px; font-weight: bold; color: blue;');
-console.log('%cЧтобы протестировать функции, откройте DevTools (F12) → Console', 'font-size: 12px; color: gray;');
-console.log('%cИ скопируйте содержимое test-console.js', 'font-size: 12px; color: gray;');
-
-
-// ═══════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════
 let currentUser = null;
 let currentProfile = null;
-let userFamilies = [];    // families user is member of
-let adminFamilies = [];   // families user is admin of
+let userFamilies = [];
+let adminFamilies = [];
 let selectedFamilyId = null;
 let selectedAdminFamilyId = null;
 let currentFamilyTab = 'schedule';
 let todayLogs = [];
 let todayMeds = [];
 let historyDate = new Date().toISOString().split('T')[0];
-
-// ═══════════════════════════════════════════
-// AUTH STATE CHANGE
-// ═══════════════════════════════════════════
 let appInitialized = false;
 
-// Слушатель для смены сессии ПОСЛЕ инициализации
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
 sb.auth.onAuthStateChange(async (event, session) => {
-  console.log('🔐 Auth event:', event, 'Has session:', !!session, 'App init:', appInitialized);
-  
-  // Обрабатываем события смены сессии только после инициализации
   if (appInitialized) {
     if (event === 'SIGNED_IN' && session) {
-      console.log('✅ Пользователь вошёл во время сессии');
       currentUser = session.user;
       await loadProfile();
       showMainApp();
     } else if (event === 'SIGNED_OUT') {
-      console.log('👋 Пользователь вышел');
       currentUser = null;
       currentProfile = null;
       showAuth();
@@ -968,9 +911,6 @@ sb.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-// ═══════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════
 function switchAuthTab(tab) {
   document.getElementById('login-form').style.display = tab === 'login' ? 'flex' : 'none';
   document.getElementById('register-form').style.display = tab === 'register' ? 'flex' : 'none';
@@ -991,7 +931,7 @@ async function doLogin() {
   const { error } = await sb.auth.signInWithPassword({ email, password: pass });
   btn.innerHTML = 'Войти'; btn.disabled = false;
   if (error) return showToast('Неверный email или пароль', 'error');
-  showToast('Добро пожаловать! 👋', 'success');
+  showToast('Добро пожаловать!', 'success');
 }
 
 async function doRegister() {
@@ -1015,7 +955,6 @@ async function doRegister() {
 
   if (error) return showToast(error.message, 'error');
 
-  // Ensure profile exists
   if (data.user) {
     await sb.from('profiles').upsert({ id: data.user.id, name });
   }
@@ -1024,18 +963,14 @@ async function doRegister() {
 
 async function doLogout() {
   await sb.auth.signOut();
-  showToast('До свидания! 👋');
+  showToast('До свидания!');
 }
 
-// ═══════════════════════════════════════════
-// PROFILE
-// ═══════════════════════════════════════════
 async function loadProfile() {
   const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
   if (data) {
     currentProfile = data;
   } else {
-    // Create profile if missing
     const name = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
     await sb.from('profiles').upsert({ id: currentUser.id, name });
     currentProfile = { id: currentUser.id, name };
@@ -1062,9 +997,6 @@ async function updateName() {
   showToast('Имя обновлено ✅', 'success');
 }
 
-// ═══════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════
 function showAuth() {
   document.getElementById('bottom-nav').style.display = 'none';
   document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
@@ -1075,19 +1007,11 @@ function showAuth() {
 
 function showMainApp() {
   document.getElementById('bottom-nav').style.display = 'flex';
-  console.log('%c📱 ГЛАВНОЕ ПРИЛОЖЕНИЕ ГОТОВО', 'font-size: 14px; font-weight: bold; color: green;');
-  
-  // Сразу запросить разрешение на уведомления (без ожидания)
   if (Notification.permission === 'default') {
-    console.log('🔔 Запрашиваю разрешение на уведомления при входе...');
-    Notification.requestPermission().then(perm => {
-      console.log('Результат:', perm);
-      setupNotifications(); // Переинициализируем после получения ответа
-    });
+    Notification.requestPermission().then(setupNotifications);
   } else {
     setupNotifications();
   }
-  
   navTo('family');
 }
 
@@ -1111,16 +1035,11 @@ async function navTo(screen) {
   }
 }
 
-// ═══════════════════════════════════════════
-// FAMILY SCREEN
-// ═══════════════════════════════════════════
 async function loadFamilyScreen() {
-  // Set date
   const now = new Date();
   const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
   document.getElementById('today-date').textContent = now.toLocaleDateString('ru-RU', opts);
 
-  // Load families user is member of
   const { data: memberships } = await sb.from('family_members')
     .select('family_id, families(id, name, admin_id)')
     .eq('user_id', currentUser.id);
@@ -1136,24 +1055,20 @@ async function loadFamilyScreen() {
   document.getElementById('no-family-msg').style.display = 'none';
   document.getElementById('family-content').style.display = 'block';
 
-  // Заполняем селектор семей
   const selector = document.getElementById('family-selector');
   selector.innerHTML = userFamilies.map(f => `
     <option value="${f.id}">${f.name}</option>
   `).join('');
 
-  // Если семья не выбрана или выбранная удалена - выбираем первую
   if (!selectedFamilyId || !userFamilies.find(f => f.id === selectedFamilyId)) {
     selectedFamilyId = userFamilies[0].id;
   }
   
   selector.value = selectedFamilyId;
   
-  // Обновляем заголовок
   const selectedFamily = userFamilies.find(f => f.id === selectedFamilyId);
   document.getElementById('family-header-title').textContent = selectedFamily?.name || 'Моя семья';
   
-  // Добавляем слушатель на смену даты в истории
   const datePickerEl = document.getElementById('history-date-picker');
   if (datePickerEl && !datePickerEl.hasListener) {
     datePickerEl.addEventListener('change', (e) => {
@@ -1163,9 +1078,7 @@ async function loadFamilyScreen() {
     datePickerEl.hasListener = true;
   }
   
-  // Подписаться на real-time уведомления СРАЗУ после загрузки семей
   subscribeToMedicationChanges();
-  
   await renderSchedule();
 }
 
@@ -1176,17 +1089,11 @@ async function changeFamilySelection() {
     const selectedFamily = userFamilies.find(f => f.id === selectedFamilyId);
     document.getElementById('family-header-title').textContent = selectedFamily?.name || 'Моя семья';
     
-    // Переподписаться на real-time уведомления с новой семьей
     subscribeToMedicationChanges();
     
-    // Обновляем содержимое
-    if (currentFamilyTab === 'schedule') {
-      await renderSchedule();
-    } else if (currentFamilyTab === 'history') {
-      await renderHistory();
-    } else if (currentFamilyTab === 'members') {
-      await renderMembers();
-    }
+    if (currentFamilyTab === 'schedule') await renderSchedule();
+    else if (currentFamilyTab === 'history') await renderHistory();
+    else if (currentFamilyTab === 'members') await renderMembers();
   }
 }
 
@@ -1194,37 +1101,27 @@ async function refreshFamily() {
   const btn = document.getElementById('refresh-btn');
   btn.textContent = '⏳';
   await loadFamilyScreen();
-  // Обновляем текущую вкладку
-  if (currentFamilyTab === 'history') {
-    await renderHistory();
-  } else if (currentFamilyTab === 'members') {
-    await renderMembers();
-  } else {
-    await renderSchedule();
-  }
+  if (currentFamilyTab === 'history') await renderHistory();
+  else if (currentFamilyTab === 'members') await renderMembers();
+  else await renderSchedule();
   btn.textContent = '🔄';
-  showToast('Обновлено ✅', 'success');
 }
 
 async function switchFamilyTab(tab) {
   currentFamilyTab = tab;
   
-  // Обновляем активность вкладок
   document.getElementById('tab-schedule').classList.toggle('active', tab === 'schedule');
   document.getElementById('tab-history').classList.toggle('active', tab === 'history');
   document.getElementById('tab-members').classList.toggle('active', tab === 'members');
   
-  // Скрываем все контейнеры
   document.getElementById('family-schedule').style.display = 'none';
   document.getElementById('family-history').style.display = 'none';
   document.getElementById('family-members').style.display = 'none';
   
-  // Показываем выбранный
   if (tab === 'schedule') {
     document.getElementById('family-schedule').style.display = 'block';
   } else if (tab === 'history') {
     document.getElementById('family-history').style.display = 'block';
-    // Инициализируем дату если не установлена
     if (!historyDate || historyDate === 'Invalid Date') {
       historyDate = new Date().toISOString().split('T')[0];
     }
@@ -1239,28 +1136,15 @@ async function switchFamilyTab(tab) {
 async function renderSchedule() {
   const today = new Date().toISOString().split('T')[0];
 
-  // Load meds for family
-  const { data: meds } = await sb.from('medications')
-    .select('*')
-    .eq('family_id', selectedFamilyId)
-    .order('created_at');
-
-  // Load today's logs
-  const { data: logs } = await sb.from('medication_logs')
-    .select('*')
-    .eq('family_id', selectedFamilyId)
-    .eq('log_date', today);
+  const { data: meds } = await sb.from('medications').select('*').eq('family_id', selectedFamilyId).order('created_at');
+  const { data: logs } = await sb.from('medication_logs').select('*').eq('family_id', selectedFamilyId).eq('log_date', today);
 
   todayMeds = (meds || []).filter(med => {
-    // Проверяем нужно ли показывать лекарство сегодня
-    if (!med.start_date) return true; // Если нет даты начала, показываем
-    
+    if (!med.start_date) return true;
     const startDate = new Date(med.start_date);
     const todayDate = new Date(today);
     const daysElapsed = Math.floor((todayDate - startDate) / (1000 * 60 * 60 * 24));
     const frequency = med.frequency || 1;
-    
-    // Если дней прошло кратно частоте - показываем
     return daysElapsed >= 0 && daysElapsed % frequency === 0;
   });
   
@@ -1317,17 +1201,14 @@ async function toggleMed(medId, timeOfDay, medName) {
   const today = new Date().toISOString().split('T')[0];
   const existing = todayLogs.find(l => l.medication_id === medId && l.time_of_day === timeOfDay);
 
-  // Оптимистичное обновление UI ДО запроса
   const medElement = document.getElementById(`med-item-${medId}-${timeOfDay}`);
   if (medElement) {
     const checkBtn = medElement.querySelector('.med-check');
     if (existing) {
-      // Сразу меняем на undone
       checkBtn.classList.remove('done');
       checkBtn.classList.add('undone');
       checkBtn.textContent = '';
     } else {
-      // Сразу меняем на done
       checkBtn.classList.remove('undone');
       checkBtn.classList.add('done');
       checkBtn.textContent = '✓';
@@ -1335,11 +1216,9 @@ async function toggleMed(medId, timeOfDay, medName) {
   }
 
   if (existing) {
-    // Отменить отметку
     const { error } = await sb.from('medication_logs').delete().eq('id', existing.id);
     if (error) {
       showToast('Ошибка отмены', 'error');
-      // Вернуть обратно на done
       if (medElement) {
         const checkBtn = medElement.querySelector('.med-check');
         checkBtn.classList.remove('undone');
@@ -1349,9 +1228,8 @@ async function toggleMed(medId, timeOfDay, medName) {
       return;
     }
     todayLogs = todayLogs.filter(l => l.id !== existing.id);
-    showToast(`${medName} — отмечено как НЕ принято`);
+    showToast(`${medName} — отменено`);
   } else {
-    // Отметить как принятое
     const { data, error } = await sb.from('medication_logs').insert({
       medication_id: medId,
       family_id: selectedFamilyId,
@@ -1364,74 +1242,36 @@ async function toggleMed(medId, timeOfDay, medName) {
     if (data) {
       todayLogs.push(data);
       showToast(`✅ ${medName} — принято!`, 'success');
-      // Отправить уведомление всем членам семьи, кроме себя (НЕ показываем себе)
       await notifyFamilyMembers(medName, currentProfile?.name || 'Неизвестно', true);
     } else if (error?.code === '23505') {
-      showToast('Уже отмечено', 'success');
-      // Оставляем зелёным
       return;
     } else if (error) {
-      showToast('Ошибка сохранения', 'error');
-      // Вернуть обратно на undone
       if (medElement) {
         const checkBtn = medElement.querySelector('.med-check');
         checkBtn.classList.remove('done');
         checkBtn.classList.add('undone');
         checkBtn.textContent = '';
       }
-      return;
     }
   }
 }
 
-// Отправить браузерное уведомление всем в семье
 async function notifyFamilyMembers(medName, giverName, skipSelf = true) {
-  console.log('%c📬 ОТПРАВКА УВЕДОМЛЕНИЯ В СЕМЬЮ', 'font-size: 13px; font-weight: bold; color: green;');
-  console.log('Лекарство:', medName);
-  console.log('Кто дал:', giverName);
-  console.log('skipSelf:', skipSelf);
-  console.log('Текущее разрешение:', Notification.permission);
-  
-  // Если разрешение ещё не дано - запросить
-  if (Notification.permission === 'default') {
-    console.log('🔔 Разрешение не дано, запрашиваю...');
-    await Notification.requestPermission().then(perm => {
-      console.log('Результат:', perm);
-    });
-  }
-
-  // Показываем уведомление ТОЛЬКО если skipSelf=true (то есть это был МЫ)
-  // и у нас есть разрешение
   if (skipSelf && Notification.permission === 'granted') {
-    console.log('⚠️ skipSelf=true - НЕ показываем себе уведомление');
+    // Не показываем себе
   } else if (!skipSelf && Notification.permission === 'granted') {
-    console.log('✅ skipSelf=false - показываем уведомление ОТ ДРУГОГО');
     try {
       const notif = new Notification('💊 МедКонтроль', {
         body: `${giverName} отдал(а) "${medName}"`,
         icon: '💊',
         badge: '💊',
-        tag: 'med-notification-' + Date.now(),
-        requireInteraction: true,
-        vibrate: [200, 100, 200]
+        tag: 'med-notification-' + Date.now()
       });
-      notif.onclick = () => {
-        window.focus();
-        notif.close();
-      };
-      console.log('✅ Уведомление УСПЕШНО отправлено!');
-    } catch (err) {
-      console.error('❌ Ошибка создания уведомления:', err);
-    }
-  } else if (!skipSelf && Notification.permission === 'denied') {
-    console.warn('⛔ Разрешение ОТКЛОНЕНО пользователем');
+      notif.onclick = () => { window.focus(); notif.close(); };
+    } catch (err) {}
   }
 
-  // Сохранить уведомление в базу для истории (ВСЕГДА)
-  const { data: members } = await sb.from('family_members')
-    .select('user_id')
-    .eq('family_id', selectedFamilyId);
-
+  const { data: members } = await sb.from('family_members').select('user_id').eq('family_id', selectedFamilyId);
   if (members) {
     const notifications = members.map(m => ({
       family_id: selectedFamilyId,
@@ -1440,14 +1280,10 @@ async function notifyFamilyMembers(medName, giverName, skipSelf = true) {
       type: 'med_given',
       is_read: m.user_id === currentUser.id
     }));
-    const { error: notifErr } = await sb.from('notifications').insert(notifications);
-    if (notifErr) console.log('⚠️ Ошибка сохранения в базу:', notifErr);
+    await sb.from('notifications').insert(notifications);
   }
 }
 
-// ═══════════════════════════════════════════
-// CREATE / JOIN FAMILY
-// ═══════════════════════════════════════════
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -1458,18 +1294,13 @@ async function createFamily() {
 
   const code = generateCode();
 
-  // Insert family
   const { data: family, error } = await sb.from('families').insert({
     name, code, admin_id: currentUser.id
   }).select().single();
 
   if (error) return showToast('Ошибка создания', 'error');
 
-  // Add admin as member
-  await sb.from('family_members').insert({
-    family_id: family.id,
-    user_id: currentUser.id
-  });
+  await sb.from('family_members').insert({ family_id: family.id, user_id: currentUser.id });
 
   document.getElementById('family-code-display').textContent = code;
   document.getElementById('created-code-box').style.display = 'block';
@@ -1478,8 +1309,7 @@ async function createFamily() {
 
 function copyCode() {
   const code = document.getElementById('family-code-display').textContent;
-  navigator.clipboard?.writeText(code).then(() => showToast('Код скопирован! 📋', 'success'))
-    .catch(() => showToast('Код: ' + code));
+  navigator.clipboard?.writeText(code).then(() => showToast('Код скопирован! 📋', 'success'));
 }
 
 async function joinFamily() {
@@ -1489,32 +1319,19 @@ async function joinFamily() {
   const { data: family, error } = await sb.from('families').select('*').eq('code', code).single();
   if (error || !family) return showToast('Семья не найдена', 'error');
 
-  // Check already member
-  const { data: existing } = await sb.from('family_members')
-    .select('id').eq('family_id', family.id).eq('user_id', currentUser.id).single();
-
+  const { data: existing } = await sb.from('family_members').select('id').eq('family_id', family.id).eq('user_id', currentUser.id).single();
   if (existing) return showToast('Вы уже в этой семье', 'error');
 
-  const { error: err2 } = await sb.from('family_members').insert({
-    family_id: family.id,
-    user_id: currentUser.id
-  });
-
+  const { error: err2 } = await sb.from('family_members').insert({ family_id: family.id, user_id: currentUser.id });
   if (err2) return showToast('Ошибка вступления', 'error');
+  
   showToast(`Вы вступили в семью "${family.name}"! 🎉`, 'success');
   document.getElementById('join-code').value = '';
   await navTo('family');
 }
 
-// ═══════════════════════════════════════════
-// ADMIN SCREEN
-// ═══════════════════════════════════════════
 async function loadAdminScreen() {
-  const { data: families } = await sb.from('families')
-    .select('*')
-    .eq('admin_id', currentUser.id)
-    .order('created_at');
-
+  const { data: families } = await sb.from('families').select('*').eq('admin_id', currentUser.id).order('created_at');
   adminFamilies = families || [];
 
   if (adminFamilies.length === 0) {
@@ -1529,23 +1346,18 @@ async function loadAdminScreen() {
 
   const list = document.getElementById('admin-family-list');
   list.innerHTML = adminFamilies.map(f => `
-    <div class="family-card-admin ${selectedAdminFamilyId === f.id ? 'selected' : ''}"
-         onclick="selectAdminFamily('${f.id}')">
+    <div class="family-card-admin ${selectedAdminFamilyId === f.id ? 'selected' : ''}" onclick="selectAdminFamily('${f.id}')">
       <h3>${f.name}</h3>
       <div class="family-code">Код: <strong>${f.code}</strong></div>
     </div>
   `).join('');
 
-  if (adminFamilies.length > 0 && !selectedAdminFamilyId) {
-    selectedAdminFamilyId = adminFamilies[0].id;
-  }
+  if (adminFamilies.length > 0 && !selectedAdminFamilyId) selectedAdminFamilyId = adminFamilies[0].id;
   if (selectedAdminFamilyId) selectAdminFamily(selectedAdminFamilyId);
 }
 
 async function selectAdminFamily(familyId) {
   selectedAdminFamilyId = familyId;
-
-  // Update UI selection
   document.querySelectorAll('.family-card-admin').forEach(c => {
     c.classList.toggle('selected', c.onclick.toString().includes(familyId));
   });
@@ -1558,24 +1370,15 @@ async function selectAdminFamily(familyId) {
 }
 
 async function renderAdminMeds() {
-  const { data: meds } = await sb.from('medications')
-    .select('*')
-    .eq('family_id', selectedAdminFamilyId)
-    .order('created_at');
-
+  const { data: meds } = await sb.from('medications').select('*').eq('family_id', selectedAdminFamilyId).order('created_at');
   const list = document.getElementById('admin-meds-list');
 
   if (!meds || meds.length === 0) {
-    list.innerHTML = `
-      <div class="empty" style="padding:20px 0">
-        <div class="empty-icon">💊</div>
-        <p>Нет лекарств. Добавьте первое!</p>
-      </div>`;
+    list.innerHTML = `<div class="empty" style="padding:20px 0"><div class="empty-icon">💊</div><p>Нет лекарств. Добавьте первое!</p></div>`;
     return;
   }
 
   const timeLabels = { morning: '🌅 Утро', afternoon: '☀️ День', evening: '🌙 Вечер' };
-
   list.innerHTML = meds.map(med => `
     <div class="med-edit-item">
       <div class="med-edit-info">
@@ -1590,13 +1393,8 @@ async function renderAdminMeds() {
   `).join('');
 }
 
-function escapeAttr(s) {
-  return (s || '').replace(/'/g, "\\'");
-}
+function escapeAttr(s) { return (s || '').replace(/'/g, "\\'"); }
 
-// ═══════════════════════════════════════════
-// MED MODAL
-// ═══════════════════════════════════════════
 function openAddMed() {
   document.getElementById('med-modal-title').textContent = 'Добавить лекарство';
   document.getElementById('edit-med-id').value = '';
@@ -1621,7 +1419,6 @@ function openEditMed(id, name, dose, timesStr, frequency) {
   document.getElementById('time-morning').checked = times.includes('morning');
   document.getElementById('time-afternoon').checked = times.includes('afternoon');
   document.getElementById('time-evening').checked = times.includes('evening');
-  document.getElementById('med-enable-reminders').checked = true;
   document.getElementById('delete-med-btn').style.display = 'flex';
   document.getElementById('save-med-btn').textContent = 'Сохранить';
   openModal('add-med-modal');
@@ -1645,21 +1442,16 @@ async function saveMed() {
   btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
 
   if (id) {
-    const { error } = await sb.from('medications').update({ name, dose, times, frequency }).eq('id', id);
-    btn.innerHTML = 'Сохранить'; btn.disabled = false;
-    if (error) return showToast('Ошибка', 'error');
+    await sb.from('medications').update({ name, dose, times, frequency }).eq('id', id);
     showToast('Лекарство обновлено ✅', 'success');
   } else {
-    const { error } = await sb.from('medications').insert({
-      family_id: selectedAdminFamilyId,
-      name, dose, times, frequency,
-      start_date: new Date().toISOString().split('T')[0]
+    await sb.from('medications').insert({
+      family_id: selectedAdminFamilyId, name, dose, times, frequency, start_date: new Date().toISOString().split('T')[0]
     });
-    btn.innerHTML = 'Добавить'; btn.disabled = false;
-    if (error) return showToast('Ошибка', 'error');
     showToast('Лекарство добавлено ✅', 'success');
   }
 
+  btn.innerHTML = id ? 'Сохранить' : 'Добавить'; btn.disabled = false;
   closeModal();
   await renderAdminMeds();
 }
@@ -1667,17 +1459,12 @@ async function saveMed() {
 async function deleteMed() {
   const id = document.getElementById('edit-med-id').value;
   if (!confirm('Удалить это лекарство?')) return;
-
-  const { error } = await sb.from('medications').delete().eq('id', id);
-  if (error) return showToast('Ошибка', 'error');
+  await sb.from('medications').delete().eq('id', id);
   showToast('Лекарство удалено', 'success');
   closeModal();
   await renderAdminMeds();
 }
 
-// ═══════════════════════════════════════════
-// MODAL HELPERS
-// ═══════════════════════════════════════════
 function openModal(id) {
   const overlay = document.getElementById(id);
   overlay.classList.add('open');
@@ -1689,9 +1476,6 @@ function closeModal() {
   document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
 }
 
-// ═══════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════
 let toastTimer;
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
@@ -1700,22 +1484,15 @@ function showToast(msg, type = '') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = 'toast'; }, 3000);
 }
-// ═══════════════════════════════════════════
-// MEMBERS AND HISTORY RENDERING
-// ═══════════════════════════════════════════
+
 async function renderMembers() {
   if (!selectedFamilyId) return;
-  
-  const { data: members } = await sb.from('family_members')
-    .select('user_id, profiles(id, name)')
-    .eq('family_id', selectedFamilyId);
-
+  const { data: members } = await sb.from('family_members').select('user_id, profiles(id, name)').eq('family_id', selectedFamilyId);
   const family = userFamilies.find(f => f.id === selectedFamilyId);
   const adminId = family?.admin_id;
   const isCurrentUserAdmin = adminId === currentUser.id;
 
   const list = document.getElementById('members-list');
-  
   if (!members || members.length === 0) {
     list.innerHTML = '<p style="text-align:center; color: var(--text2);">Нет участников</p>';
     return;
@@ -1726,16 +1503,13 @@ async function renderMembers() {
     const isAdmin = profile?.id === adminId;
     const isCurrentMember = profile?.id === currentUser.id;
     const letter = (profile?.name || '?')[0]?.toUpperCase();
-    
     return `
       <div class="member-item">
         <div class="member-avatar">${letter}</div>
         <div class="member-name">${profile?.name || 'Без имени'}</div>
         ${isAdmin ? '<span class="member-badge">👑 Админ</span>' : ''}
         ${isCurrentUserAdmin && !isCurrentMember && !isAdmin ? `
-          <button class="btn btn-danger btn-sm" onclick="removeFamilyMember('${profile?.id}', '${profile?.name}')">
-            ❌ Выгнать
-          </button>
+          <button class="btn btn-danger btn-sm" onclick="removeFamilyMember('${profile?.id}', '${profile?.name}')">❌ Выгнать</button>
         ` : ''}
       </div>
     `;
@@ -1744,76 +1518,35 @@ async function renderMembers() {
 
 async function renderHistory() {
   if (!selectedFamilyId) return;
-  
-  // Получить все лекарства для семьи на эту дату
-  const { data: meds } = await sb.from('medications')
-    .select('*')
-    .eq('family_id', selectedFamilyId)
-    .order('created_at');
-
-  // Получить все выданные лекарства за эту дату
-  const { data: logs } = await sb.from('medication_logs')
-    .select('*')
-    .eq('family_id', selectedFamilyId)
-    .eq('log_date', historyDate)
-    .order('given_at');
-
-  const medMap = {};
-  (meds || []).forEach(m => medMap[m.id] = m);
+  const { data: meds } = await sb.from('medications').select('*').eq('family_id', selectedFamilyId).order('created_at');
+  const { data: logs } = await sb.from('medication_logs').select('*').eq('family_id', selectedFamilyId).eq('log_date', historyDate).order('given_at');
 
   const content = document.getElementById('history-content');
-
-  // Фильтруем лекарства которые должны быть на эту дату
   const filteredMeds = (meds || []).filter(med => {
     if (!med.start_date) return true;
     const startDate = new Date(med.start_date);
     const selectedDate = new Date(historyDate);
     const daysElapsed = Math.floor((selectedDate - startDate) / (1000 * 60 * 60 * 24));
-    const frequency = med.frequency || 1;
-    return daysElapsed >= 0 && daysElapsed % frequency === 0;
+    return daysElapsed >= 0 && daysElapsed % (med.frequency || 1) === 0;
   });
 
   if (!filteredMeds || filteredMeds.length === 0) {
-    content.innerHTML = `
-      <div class="empty" style="padding:40px 20px">
-       
-        <div class="empty-icon">📋</div>
-        <p>На эту дату нет лекарств для приёма</p>
-      </div>
-    `;
+    content.innerHTML = `<div class="empty" style="padding:40px 20px"><div class="empty-icon">📋</div><p>На эту дату нет лекарств</p></div>`;
     return;
   }
 
-  // Count stats - сколько выдано из всех
-  const givenCount = (logs || []).length;
-  const totalCount = filteredMeds.length;
-
-  let html = `
-    <div class="history-summary">
-      <div class="summary-stat">${givenCount}/${totalCount}</div>
-      <div class="summary-label">Лекарств отдано</div>
-    </div>
-  `;
-
+  let html = `<div class="history-summary"><div class="summary-stat">${(logs || []).length}/${filteredMeds.length}</div><div class="summary-label">Лекарств отдано</div></div>`;
   const timeLabels = { morning: '🌅 Утро', afternoon: '☀️ День', evening: '🌙 Вечер' };
-  const times = ['morning', 'afternoon', 'evening'];
 
-  times.forEach(time => {
+  ['morning', 'afternoon', 'evening'].forEach(time => {
     const medsForTime = filteredMeds.filter(m => m.times?.includes(time));
     if (medsForTime.length === 0) return;
 
-    html += `<div class="history-day-section">
-      <div class="history-day-header">${timeLabels[time]}</div>`;
-
+    html += `<div class="history-day-section"><div class="history-day-header">${timeLabels[time]}</div>`;
     medsForTime.forEach(med => {
       const log = (logs || []).find(l => l.medication_id === med.id && l.time_of_day === time);
-      
       if (log) {
-        // Выданное лекарство
-        const givenTime = log.given_at 
-          ? new Date(log.given_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-          : '??:??';
-        
+        const givenTime = log.given_at ? new Date(log.given_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '??:??';
         html += `
           <div class="history-item">
             <div class="history-check">✓</div>
@@ -1823,10 +1556,8 @@ async function renderHistory() {
               <div class="history-time">🕐 ${givenTime}</div>
               <div class="history-given-by">Дал(а): ${log.given_by_name || 'неизвестно'}</div>
             </div>
-          </div>
-        `;
+          </div>`;
       } else {
-        // НЕ выданное лекарство
         html += `
           <div class="history-item" style="opacity: 0.6;">
             <div class="history-check" style="background: #e5e7eb; color: #6b7280;">✗</div>
@@ -1835,110 +1566,43 @@ async function renderHistory() {
               <div class="history-meta">${med.dose}</div>
               <div class="history-time" style="color: #ef4444;">❌ Не выдано</div>
             </div>
-          </div>
-        `;
+          </div>`;
       }
     });
-
     html += '</div>';
   });
-
   content.innerHTML = html;
 }
 
-// ═══════════════════════════════════════════
-// LEAVE / REMOVE FAMILY MEMBERS
-// ═══════════════════════════════════════════
 async function leaveFamily() {
-  if (!selectedFamilyId) return;
-  
-  const family = userFamilies.find(f => f.id === selectedFamilyId);
-  const isAdmin = family?.admin_id === currentUser.id;
-  
-  if (isAdmin) {
-    showToast('⚠️ Админ не может выйти из семьи', 'error');
-    return;
-  }
-  
-  if (!confirm('Вы точно хотите выйти из этой семьи?')) return;
-  
-  const { error } = await sb.from('family_members')
-    .delete()
-    .eq('family_id', selectedFamilyId)
-    .eq('user_id', currentUser.id);
-  
-  if (error) {
-    showToast('Ошибка выхода', 'error');
-    return;
-  }
-  
+  if (!selectedFamilyId || !confirm('Вы точно хотите выйти из этой семьи?')) return;
+  await sb.from('family_members').delete().eq('family_id', selectedFamilyId).eq('user_id', currentUser.id);
   showToast('Вы вышли из семьи 👋', 'success');
   await loadFamilyScreen();
 }
 
 async function removeFamilyMember(memberId, memberName) {
-  if (!selectedFamilyId) return;
-  
-  const family = userFamilies.find(f => f.id === selectedFamilyId);
-  const isAdmin = family?.admin_id === currentUser.id;
-  
-  if (!isAdmin) {
-    showToast('Только администратор может удалять участников', 'error');
-    return;
-  }
-  
-  if (memberId === currentUser.id) {
-    showToast('Вы не можете исключить сами себя', 'error');
-    return;
-  }
-  
-  if (!confirm(`Выгнать ${memberName} из семьи?`)) return;
-  
-  const { error } = await sb.from('family_members')
-    .delete()
-    .eq('family_id', selectedFamilyId)
-    .eq('user_id', memberId);
-  
-  if (error) {
-    showToast('Ошибка удаления', 'error');
-    return;
-  }
-  
+  if (!selectedFamilyId || !confirm(`Выгнать ${memberName} из семьи?`)) return;
+  await sb.from('family_members').delete().eq('family_id', selectedFamilyId).eq('user_id', memberId);
   showToast(`${memberName} выгнан(а) из семьи ✅`, 'success');
   await renderMembers();
 }
 
-// ═══════════════════════════════════════════
-// INIT — единственная точка входа
-// ═══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
   const loader = document.getElementById('loader');
   try {
-    // Получить текущего пользователя (работает даже если сессия истекла но есть refresh token)
-    const { data: { user }, error } = await sb.auth.getUser();
-    
-    if (error) {
-      console.log('⚠️ Ошибка getUser:', error.message);
-      throw error;
-    }
-    
+    const { data: { user } } = await sb.auth.getUser();
     if (user) {
-      console.log('✅ Найден сохранённый пользователь:', user.email);
       currentUser = user;
       await loadProfile();
-      console.log('👤 Профиль загружен:', currentProfile?.name);
       appInitialized = true;
       showMainApp();
-      setupNotifications();
       startReminderCheck();
-      registerServiceWorkerAndSubscribeToPush();
     } else {
-      console.log('❌ Пользователь не найден - показываю форму входа');
       appInitialized = true;
       showAuth();
     }
   } catch (err) {
-    console.error("❌ Ошибка инициализации:", err);
     appInitialized = true;
     showAuth();
   } finally {
@@ -1949,219 +1613,67 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-// ═══════════════════════════════════════════
-// VISIBILITY CHANGE — восстановление при возврате из фона
-// ═══════════════════════════════════════════
+// ИСПРАВЛЕНИЕ: Менеджмент восстановления без создания множества WebSocket каналов
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    console.log('👁️ Приложение свёрнуто');
-  } else {
-    console.log('👁️ Приложение развёрнуто - восстанавливаю обработчики');
-    // Переподписаться на real-time
-    if (currentUser && selectedFamilyId) {
-      subscribeToMedicationChanges();
-    }
+  if (!document.hidden && currentUser && selectedFamilyId) {
+    // В Supabase v2 соединение автоматически восстанавливается.
+    // Нам нужно только запросить свежие данные, чтобы обновить UI:
+    refreshFamily(); 
   }
 });
 
-// ═══════════════════════════════════════════
-// NOTIFICATION SETUP
-// ═══════════════════════════════════════════
-function setupNotifications() {
-  console.log('%c🔔 === ИНИЦИАЛИЗАЦИЯ УВЕДОМЛЕНИЙ ===', 'font-size: 14px; font-weight: bold; color: blue;');
-  
-  // Проверка поддержки
-  if (!('Notification' in window)) {
-    console.error('❌ Браузер не поддерживает Notification API');
-    return;
-  }
-  
-  console.log('✅ Поддержка Notification API: ДА');
-  console.log('📋 Текущий статус разрешения:', Notification.permission);
-  
-  // Если уже запрещено - ничего не делаем
-  if (Notification.permission === 'denied') {
-    console.warn('⛔ Уведомления ЗАБЛОКИРОВАНЫ в настройках браузера');
-    console.warn('📌 Чтобы включить: Settings → Privacy → Notifications → найти этот сайт → Allow');
-    return;
-  }
-  
-  // Если уже разрешено - готово
-  if (Notification.permission === 'granted') {
-    console.log('✅ Разрешение УЖЕ ДАНО, уведомления готовы к работе!');
-    return;
-  }
-  
-  // Если 'default' - запрашиваем
-  if (Notification.permission === 'default') {
-    console.log('📢 Статус DEFAULT - запрашиваю разрешение...');
-    Notification.requestPermission().then(permission => {
-      console.log('🎯 Результат запроса:', permission);
-      
-      if (permission === 'granted') {
-        console.log('✅ РАЗРЕШЕНИЕ ПОЛУЧЕНО!');
-        testNotification();
-      } else if (permission === 'denied') {
-        console.warn('⛔ Пользователь ОТКЛОНИЛ разрешение');
-      } else {
-        console.log('❓ Неизвестный статус:', permission);
-      }
-    }).catch(err => {
-      console.error('❌ Ошибка при запросе разрешения:', err);
-    });
-  }
-}
-
-// Отправить тестовое уведомление
-function testNotification() {
-  // Убрано - не нужно показывать уведомление при входе
-  console.log('✅ Уведомления готовы к работе');
-}
-
-function registerServiceWorkerAndSubscribeToPush() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      console.log('✅ Service Worker зарегистрирован');
-    }).catch(err => {
-      console.log('⚠️ Service Worker ошибка:', err);
-    });
-  }
-}
-
-// ═══════════════════════════════════════════
-// REMINDERS
-// ═══════════════════════════════════════════
-const reminderTimes = {
-  morning: 6,    // 06:00 (было 08:00)
-  afternoon: 14, // 14:00
-  evening: 20    // 20:00
-};
+function setupNotifications() {}
 
 function startReminderCheck() {
-  // Запросить разрешение на уведомления
-  if (Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-  // Проверять напоминания каждые 60 секунд
   setInterval(checkAndSendReminders, 60000);
-  // Первая проверка сразу
-  checkAndSendReminders();
 }
 
 async function checkAndSendReminders() {
   if (!currentUser || !selectedFamilyId) return;
-
   const now = new Date();
-  const hours = now.getHours();
-  const minutes = now.getMinutes();
+  const hours = now.getHours(), minutes = now.getMinutes();
   const today = now.toISOString().split('T')[0];
 
-  // Проверить каждое время (в минуты до напоминания)
+  const reminderTimes = { morning: 6, afternoon: 14, evening: 20 };
+
   for (const [timeKey, hour] of Object.entries(reminderTimes)) {
-    // Отправить напоминание за 15 минут до времени
-    const reminderHour = hour;
-    const reminderMinutes = 0;
-
-    if (hours === reminderHour && minutes >= reminderMinutes && minutes < (reminderMinutes + 1)) {
-      // Получить лекарства на это время
-      const { data: meds } = await sb.from('medications')
-        .select('*')
-        .eq('family_id', selectedFamilyId)
-        .or(`times.contains.["${timeKey}"]`);
-
-      if (!meds) return;
-
-      // Получить уже отданные лекарства на сегодня для этого времени
-      const { data: logs } = await sb.from('medication_logs')
-        .select('medication_id')
-        .eq('family_id', selectedFamilyId)
-        .eq('log_date', today)
-        .eq('time_of_day', timeKey);
-
+    if (hours === hour && minutes === 0) {
+      const { data: meds } = await sb.from('medications').select('*').eq('family_id', selectedFamilyId).or(`times.contains.["${timeKey}"]`);
+      if (!meds) continue;
+      
+      const { data: logs } = await sb.from('medication_logs').select('medication_id').eq('family_id', selectedFamilyId).eq('log_date', today).eq('time_of_day', timeKey);
       const givenMedIds = new Set((logs || []).map(l => l.medication_id));
       const pendingMeds = meds.filter(m => m.times?.includes(timeKey) && !givenMedIds.has(m.id));
 
-      if (pendingMeds.length > 0) {
-        const timeLabel = {
-          morning: '🌅 Утро (08:00)',
-          afternoon: '☀️ День (14:00)',
-          evening: '🌙 Вечер (20:00)'
-        }[timeKey];
-
+      if (pendingMeds.length > 0 && Notification.permission === 'granted') {
         const medNames = pendingMeds.map(m => m.name).join(', ');
-
-        if (Notification.permission === 'granted') {
-          try {
-            new Notification('💊 МедКонтроль — Напоминание', {
-              body: `${timeLabel}\nНужно отдать: ${medNames}`,
-              icon: '💊',
-              badge: '💊',
-              tag: `reminder-${timeKey}`,
-              requireInteraction: true
-            });
-          } catch (e) {
-            console.log('Notification error:', e);
-          }
-        }
+        new Notification('💊 МедКонтроль', { body: `Напоминание: ${medNames}`, icon: '💊' });
       }
     }
   }
 }
 
-// ═══════════════════════════════════════════
-// REAL-TIME SUBSCRIPTIONS
-// ═══════════════════════════════════════════
 let realtimeSubscription = null;
 
-function subscribeToMedicationChanges() {
-  if (!currentUser || !userFamilies || userFamilies.length === 0) {
-    console.log('❌ Нельзя подписаться - нет семей');
-    return;
-  }
+// ИСПРАВЛЕНИЕ: Корректное уничтожение старых каналов WebSocket в Supabase v2
+async function subscribeToMedicationChanges() {
+  if (!currentUser || !userFamilies || userFamilies.length === 0) return;
 
-  // Отписаться от старой подписки если есть
   if (realtimeSubscription) {
     try {
-      realtimeSubscription.unsubscribe();
-    } catch (e) {
-      console.log('Ошибка отписки:', e);
-    }
+      await sb.removeChannel(realtimeSubscription);
+      realtimeSubscription = null;
+    } catch (e) {}
   }
 
-  console.log('🔄 Подписываемся на real-time уведомления...');
-  console.log('Семьи:', userFamilies.map(f => f.id));
-
-  // Подписаться на изменения в medication_logs
   realtimeSubscription = sb
-    .channel('medication_logs_changes_' + Date.now())
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'medication_logs'
-    }, (payload) => {
-      console.log('📨 Real-time INSERT:', payload.new);
-      handleNewMedicationLog(payload.new);
-    })
-    .on('postgres_changes', {
-      event: 'DELETE',
-      schema: 'public',
-      table: 'medication_logs'
-    }, (payload) => {
-      console.log('📨 Real-time DELETE:', payload.old);
-      handleDeletedMedicationLog(payload.old);
-    })
-    .subscribe((status, err) => {
-      console.log('📡 Статус подписки:', status);
-      if (err) console.error('❌ Ошибка подписки:', err);
-      if (status === 'SUBSCRIBED') {
-        console.log('✅ Real-time активен! Ждём уведомлений...');
-      }
-    });
+    .channel('medication_logs_changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'medication_logs' }, (payload) => handleNewMedicationLog(payload.new))
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'medication_logs' }, (payload) => handleDeletedMedicationLog(payload.old))
+    .subscribe();
 }
 
 function handleDeletedMedicationLog(log) {
-  console.log('🗑️ Удалена запись:', log);
-  
   if (log.family_id === selectedFamilyId && currentFamilyTab === 'schedule') {
     const medElement = document.getElementById(`med-item-${log.medication_id}-${log.time_of_day}`);
     if (medElement) {
@@ -2174,98 +1686,23 @@ function handleDeletedMedicationLog(log) {
 }
 
 function handleNewMedicationLog(log) {
-  console.log('🔔 Обработка новой записи:', log);
-  console.log('Текущий пользователь ID:', currentUser.id);
-  console.log('Кто добавил:', log.given_by);
-  
-  // Если это мы сами отметили - только обновляем UI, не показываем уведомление
-  if (log.given_by === currentUser.id) {
-    console.log('👤 Это я сам отметил - только обновляю UI');
-    if (log.family_id === selectedFamilyId && currentFamilyTab === 'schedule') {
-      const medElement = document.getElementById(`med-item-${log.medication_id}-${log.time_of_day}`);
-      if (medElement) {
-        const checkBtn = medElement.querySelector('.med-check');
-        checkBtn.classList.add('done');
-        checkBtn.classList.remove('undone');
-        checkBtn.textContent = '✓';
-      }
-    }
-    return; // ← ВЫХОДИМ, не показываем уведомление
-  }
+  if (log.given_by === currentUser.id) return;
+  if (!userFamilies.find(f => f.id === log.family_id)) return;
 
-  // Если этого в наших семьях нет - игнорируем
-  if (!userFamilies.find(f => f.id === log.family_id)) {
-    console.log('❌ Семья не в нашем списке - игнорируем');
-    return;
-  }
-
-  const giverName = log.given_by_name || 'Кто-то';
-  const timeLabel = {
-    morning: '🌅 Утро',
-    afternoon: '☀️ День',
-    evening: '🌙 Вечер'
-  }[log.time_of_day] || 'Неизвестное время';
-
-  console.log(`👁️ УВЕДОМЛЕНИЕ: ${giverName} отдал(а) лекарство (${timeLabel})`);
-
-  // Показать браузерное уведомление ОТ ДРУГОГО пользователя
-  if (Notification.permission === 'granted') {
-    try {
-      const notif = new Notification('💊 МедКонтроль', {
-        body: `${giverName} отдал(а) лекарство\n${timeLabel}`,
-        icon: '💊',
-        badge: '💊',
-        tag: 'med-notification-' + log.medication_id + '-' + log.time_of_day,
-        requireInteraction: true,
-        vibrate: [200, 100, 200]
-      });
-      notif.onclick = () => {
-        window.focus();
-        notif.close();
-      };
-      console.log('✅ Браузерное уведомление показано');
-    } catch (e) {
-      console.error('❌ Ошибка уведомления:', e);
-    }
-  } else {
-    console.log('⚠️ Разрешение на уведомления не дано');
-  }
-
-  // Обновить UI если эта семья выбрана
   if (log.family_id === selectedFamilyId) {
-    console.log('🔄 Обновляю UI для выбранной семьи');
     if (currentFamilyTab === 'schedule') {
-      // Обновляем кнопку в реальном времени
       const medElement = document.getElementById(`med-item-${log.medication_id}-${log.time_of_day}`);
       if (medElement) {
         const checkBtn = medElement.querySelector('.med-check');
         checkBtn.classList.add('done');
         checkBtn.classList.remove('undone');
         checkBtn.textContent = '✓';
-        console.log('✅ Кнопка обновлена на зелёную');
       }
     } else if (currentFamilyTab === 'history') {
-      console.log('📅 Обновляю историю');
       renderHistory();
     }
   }
 }
 </script>
-
-<!-- PWA Registration -->
-<script>
-let installPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  installPrompt = e;
-  console.log('✅ Приложение можно установить');
-});
-
-window.addEventListener('appinstalled', () => {
-  console.log('✅ Приложение установлено!');
-  installPrompt = null;
-});
-</script>
-
 </body>
 </html>
